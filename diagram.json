@@ -1,0 +1,419 @@
+{
+  "version": 1,
+  "author": "Nicolas de Barquin",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "top": 0.6, "left": -0.6, "attrs": {} },
+    {
+      "type": "wokwi-led-ring",
+      "id": "ring1",
+      "top": -248.96,
+      "left": 77.99,
+      "attrs": { "pixels": "16" }
+    },
+    {
+      "type": "wokwi-led-ring",
+      "id": "ring2",
+      "top": -248.96,
+      "left": 241.19,
+      "attrs": { "pixels": "16" }
+    },
+    { "type": "wokwi-vcc", "id": "vcc1", "top": -133.64, "left": -48, "attrs": {} },
+    { "type": "wokwi-gnd", "id": "gnd1", "top": 220.8, "left": 153, "attrs": {} },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb2",
+      "top": 192.2,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    { "type": "wokwi-vcc", "id": "vcc2", "top": 197, "left": 411.36, "rotate": 270, "attrs": {} },
+    { "type": "wokwi-gnd", "id": "gnd2", "top": 173.9, "left": 481.3, "rotate": 270, "attrs": {} },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb8",
+      "top": 153.8,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc3",
+      "top": 158.6,
+      "left": 411.36,
+      "rotate": 270,
+      "attrs": {}
+    },
+    { "type": "wokwi-gnd", "id": "gnd3", "top": 135.5, "left": 481.3, "rotate": 270, "attrs": {} },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb3",
+      "top": 115.4,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc4",
+      "top": 120.2,
+      "left": 411.36,
+      "rotate": 270,
+      "attrs": {}
+    },
+    { "type": "wokwi-gnd", "id": "gnd4", "top": 97.1, "left": 481.3, "rotate": 270, "attrs": {} },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb7",
+      "top": 77,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    { "type": "wokwi-vcc", "id": "vcc5", "top": 81.8, "left": 411.36, "rotate": 270, "attrs": {} },
+    { "type": "wokwi-gnd", "id": "gnd5", "top": 58.7, "left": 481.3, "rotate": 270, "attrs": {} },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb9",
+      "top": 38.6,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    { "type": "wokwi-vcc", "id": "vcc6", "top": 43.4, "left": 411.36, "rotate": 270, "attrs": {} },
+    { "type": "wokwi-gnd", "id": "gnd6", "top": 20.3, "left": 481.3, "rotate": 270, "attrs": {} },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb10",
+      "top": 0.2,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    { "type": "wokwi-vcc", "id": "vcc7", "top": 5, "left": 411.36, "rotate": 270, "attrs": {} },
+    { "type": "wokwi-gnd", "id": "gnd7", "top": -18.1, "left": 481.3, "rotate": 270, "attrs": {} },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb11",
+      "top": -38.2,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc8",
+      "top": -33.4,
+      "left": 411.36,
+      "rotate": 270,
+      "attrs": {}
+    },
+    { "type": "wokwi-gnd", "id": "gnd8", "top": -56.5, "left": 481.3, "rotate": 270, "attrs": {} },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb12",
+      "top": -76.6,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc9",
+      "top": -71.8,
+      "left": 411.36,
+      "rotate": 270,
+      "attrs": {}
+    },
+    { "type": "wokwi-gnd", "id": "gnd9", "top": -94.9, "left": 481.3, "rotate": 270, "attrs": {} },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb13",
+      "top": -115,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc10",
+      "top": -110.2,
+      "left": 411.36,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gnd",
+      "id": "gnd10",
+      "top": -133.3,
+      "left": 481.3,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb14",
+      "top": -153.4,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc11",
+      "top": -148.6,
+      "left": 411.36,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gnd",
+      "id": "gnd11",
+      "top": -171.7,
+      "left": 481.3,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb15",
+      "top": -191.8,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc12",
+      "top": -187,
+      "left": 411.36,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gnd",
+      "id": "gnd12",
+      "top": -210.1,
+      "left": 481.3,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb16",
+      "top": -230.2,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc13",
+      "top": -225.6,
+      "left": 408.96,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gnd",
+      "id": "gnd13",
+      "top": -248.7,
+      "left": 478.9,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb4",
+      "top": 230.6,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc14",
+      "top": 235.4,
+      "left": 411.36,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gnd",
+      "id": "gnd14",
+      "top": 212.3,
+      "left": 481.3,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb5",
+      "top": 269,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc15",
+      "top": 273.8,
+      "left": 411.36,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gnd",
+      "id": "gnd15",
+      "top": 250.7,
+      "left": 481.3,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb6",
+      "top": 307.4,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc16",
+      "top": 312.2,
+      "left": 411.36,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gnd",
+      "id": "gnd16",
+      "top": 289.1,
+      "left": 481.3,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-neopixel",
+      "id": "rgb17",
+      "top": 345.8,
+      "left": 446.7,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc17",
+      "top": 350.6,
+      "left": 411.36,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gnd",
+      "id": "gnd17",
+      "top": 327.5,
+      "left": 481.3,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": -236.6,
+      "left": -239.8,
+      "rotate": 180,
+      "attrs": { "color": "red" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": -206.95,
+      "left": -308.6,
+      "rotate": 180,
+      "attrs": { "value": "10000" }
+    },
+    {
+      "type": "wokwi-gnd",
+      "id": "gnd18",
+      "top": -220.3,
+      "left": -354.9,
+      "rotate": 90,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc18",
+      "top": -235.2,
+      "left": -282.24,
+      "rotate": 270,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [ "uno:GND.1", "ring1:GND", "black", [ "v-28.2", "h9.3" ] ],
+    [ "uno:GND.1", "ring2:GND", "black", [ "v-28.2", "h182.1" ] ],
+    [ "ring1:VCC", "vcc1:VCC", "red", [ "v9.6", "h-144" ] ],
+    [ "ring2:VCC", "vcc1:VCC", "red", [ "v9.6", "h-307.2" ] ],
+    [ "vcc1:VCC", "uno:5V", "red", [ "v316.8", "h201.6" ] ],
+    [ "uno:GND.2", "gnd1:GND", "black", [ "v0" ] ],
+    [ "rgb2:VDD", "vcc2:VCC", "red", [ "v0" ] ],
+    [ "rgb2:VSS", "gnd2:GND", "black", [ "h0" ] ],
+    [ "rgb8:VDD", "vcc3:VCC", "red", [ "v0" ] ],
+    [ "rgb8:VSS", "gnd3:GND", "black", [ "h0" ] ],
+    [ "rgb3:VDD", "vcc4:VCC", "red", [ "v0" ] ],
+    [ "rgb3:VSS", "gnd4:GND", "black", [ "h0" ] ],
+    [ "rgb7:VDD", "vcc5:VCC", "red", [ "v0" ] ],
+    [ "rgb7:VSS", "gnd5:GND", "black", [ "h0" ] ],
+    [ "rgb9:VDD", "vcc6:VCC", "red", [ "v0" ] ],
+    [ "rgb9:VSS", "gnd6:GND", "black", [ "h0" ] ],
+    [ "rgb10:VDD", "vcc7:VCC", "red", [ "v0" ] ],
+    [ "rgb10:VSS", "gnd7:GND", "black", [ "h0" ] ],
+    [ "rgb11:VDD", "vcc8:VCC", "red", [ "v0" ] ],
+    [ "rgb11:VSS", "gnd8:GND", "black", [ "h0" ] ],
+    [ "rgb12:VDD", "vcc9:VCC", "red", [ "v0" ] ],
+    [ "rgb12:VSS", "gnd9:GND", "black", [ "h0" ] ],
+    [ "rgb13:VDD", "vcc10:VCC", "red", [ "v0" ] ],
+    [ "rgb13:VSS", "gnd10:GND", "black", [ "h0" ] ],
+    [ "rgb14:VDD", "vcc11:VCC", "red", [ "v0" ] ],
+    [ "rgb14:VSS", "gnd11:GND", "black", [ "h0" ] ],
+    [ "rgb15:VDD", "vcc12:VCC", "red", [ "v0" ] ],
+    [ "rgb15:VSS", "gnd12:GND", "black", [ "h0" ] ],
+    [ "rgb16:VDD", "vcc13:VCC", "red", [ "v0" ] ],
+    [ "rgb16:VSS", "gnd13:GND", "black", [ "h0" ] ],
+    [ "rgb16:DOUT", "rgb15:DIN", "green", [ "v0" ] ],
+    [ "rgb15:DOUT", "rgb14:DIN", "green", [ "v0" ] ],
+    [ "rgb14:DOUT", "rgb13:DIN", "green", [ "v0" ] ],
+    [ "rgb13:DOUT", "rgb12:DIN", "green", [ "v0" ] ],
+    [ "rgb12:DOUT", "rgb11:DIN", "green", [ "v0" ] ],
+    [ "rgb11:DOUT", "rgb10:DIN", "green", [ "v0" ] ],
+    [ "rgb10:DOUT", "rgb9:DIN", "green", [ "v0" ] ],
+    [ "rgb9:DOUT", "rgb7:DIN", "green", [ "v0" ] ],
+    [ "rgb7:DOUT", "rgb3:DIN", "green", [ "v0" ] ],
+    [ "rgb3:DOUT", "rgb8:DIN", "green", [ "v0" ] ],
+    [ "rgb8:DOUT", "rgb2:DIN", "green", [ "v0" ] ],
+    [ "uno:6", "rgb16:DIN", "green", [ "v-268.8", "h253.3" ] ],
+    [ "rgb4:VDD", "vcc14:VCC", "red", [ "v0" ] ],
+    [ "rgb4:VSS", "gnd14:GND", "black", [ "h0" ] ],
+    [ "rgb5:VDD", "vcc15:VCC", "red", [ "v0" ] ],
+    [ "rgb5:VSS", "gnd15:GND", "black", [ "h0" ] ],
+    [ "rgb6:VDD", "vcc16:VCC", "red", [ "v0" ] ],
+    [ "rgb6:VSS", "gnd16:GND", "black", [ "h0" ] ],
+    [ "rgb17:VDD", "vcc17:VCC", "red", [ "v0" ] ],
+    [ "rgb17:VSS", "gnd17:GND", "black", [ "h0" ] ],
+    [ "rgb2:DOUT", "rgb4:DIN", "green", [ "v0" ] ],
+    [ "rgb4:DOUT", "rgb5:DIN", "green", [ "v0" ] ],
+    [ "rgb5:DOUT", "rgb6:DIN", "green", [ "v0" ] ],
+    [ "rgb6:DOUT", "rgb17:DIN", "green", [ "v0" ] ],
+    [ "rgb17:DOUT", "ring2:DIN", "green", [ "v19.2", "h-116.1" ] ],
+    [ "ring2:DOUT", "ring1:DIN", "green", [ "v19.2", "h-76.8" ] ],
+    [ "gnd18:GND", "r1:2", "black", [ "v0" ] ],
+    [ "vcc18:VCC", "btn1:2.r", "red", [ "v0" ] ],
+    [ "r1:1", "btn1:1.r", "black", [ "v0" ] ],
+    [ "btn1:1.l", "uno:2", "gold", [ "h77", "v131.6", "h326.4" ] ]
+  ],
+  "dependencies": {}
+}
