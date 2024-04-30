@@ -1,18 +1,28 @@
 
 #include <Adafruit_NeoPixel.h>
 
-#define PIN 6
+#define PIN 3
 #define NUM_PIXELS 48
 #define RAIN_START 0
 #define RAIN_END 15
 #define SEWER_START 16
 #define SEWER_END 31
-#define SEWER_LEVEL_MAX 200
 #define CANAL_START 32
 #define CANAL_END 47
+#define SEWER_LEVEL_MAX 100
 #define CANAL_LEVEL_MAX 100
+#define RELEASE_BUTTON_PIN 9
+#define GIEP_BUTTON_PIN 10
 
-
+#define RELEASE 2
+#define GIEP1 4
+#define GIEP2 5
+#define GIEP3 6
+#define GIEP4 7
+#define GIEP5 8
+#define GIEP6 9
+#define GIEP7 10
+#define GIEP8 11
 
 Adafruit_NeoPixel pixels(NUM_PIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
