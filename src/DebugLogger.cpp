@@ -14,12 +14,11 @@ void DebugLogger::setLogLevel(LogLevel level) {
 
 void DebugLogger::log(LogLevel level, const char* format, va_list args) {
     if (s_stream && level <= s_logLevel) {
-        s_stream->print(millis());
-        s_stream->print(" [");
-        s_stream->print(getLevelString(level));
-        s_stream->print("] ");
-        s_stream->printf(format, args);
-        s_stream->println();
+        char buffer[256];
+        unsigned long timestamp = millis();
+        int prefixLen = snprintf(buffer, sizeof(buffer), "%lu [%s] ", timestamp, getLevelString(level));
+        vsnprintf(buffer + prefixLen, sizeof(buffer) - prefixLen, format, args);
+        s_stream->println(buffer);
     }
 }
 

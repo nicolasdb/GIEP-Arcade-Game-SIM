@@ -3,79 +3,92 @@
 #include "DebugLogger.h"
 #include "StateTracker.h"
 #include "MatrixConfig.h"
+#include "Scene.h"
 
 
-#define LED_PIN     9  // Change this to the pin your LED matrix is connected to
-#define NUM_LEDS    64 // 8x8 matrix
+#define LED_PIN     9
 #define BRIGHTNESS  30
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
+#define PIN_BUTTON  0  // Built-in button pin
+
+// Define matrix dimensions
+const uint8_t MATRIX_WIDTH = 8;
+const uint8_t MATRIX_HEIGHT = 8;
+
+// Calculate total number of LEDs
+#define NUM_LEDS (MATRIX_WIDTH * MATRIX_HEIGHT)
 
 CRGB leds[NUM_LEDS];
-MatrixConfig config(8, 8, MatrixOrientation::TOP_LEFT_HORIZONTAL, false);
+MatrixConfig config(MATRIX_WIDTH, MATRIX_HEIGHT, MatrixOrientation::TOP_LEFT_HORIZONTAL, false);
+Scene scene(config);
 
+// Define the bitmap for our scene
+const uint32_t BITMAP_ARRAY[NUM_LEDS] = {
+  0xFFFFFF, 0x00FF00, 0xFFFFFF, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF,
+  0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x000000, 0x000000, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF,
+  0xFFFFFF, 0xFFFF00, 0xFFFFFF, 0xFFFFFF, 0x000000, 0xFFFF00, 0xFFFFFF, 0xFFFFFF,
+  0xFFFFFF, 0x000000, 0x000000, 0xFFFF00, 0x000000, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF,
+  0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000,
+  0x000000, 0x00FF00, 0x00FF00, 0x00FF00, 0x000000, 0x00FF00, 0x00FF00, 0x000000,
+  0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000
+};
+
+void logSystemState() {
+    DebugLogger::info("Current system state: %s", StateTracker::getCurrentStateString());
+    DebugLogger::info("Matrix config: %dx%d, %s, %s",
+                      config.getWidth(), config.getHeight(),
+                      config.getOrientation() == MatrixOrientation::TOP_LEFT_HORIZONTAL ? "TOP_LEFT_HORIZONTAL" : "Other",
+                      config.isZigzag() ? "zigzag" : "normal");
+    DebugLogger::info("Total LEDs: %d", NUM_LEDS);
+    DebugLogger::info("Scene loaded: Yes");
+}
 
 void setup() {
     Serial.begin(115200);
-    while (!Serial) { ; } // Wait for serial port to connect
-    delay(1000);  // Add a delay to ensure serial is ready
+    while (!Serial) { ; }
+    delay(1000);
 
-    DebugLogger::init(Serial, LogLevel::DEBUG);
+    pinMode(PIN_BUTTON, INPUT_PULLUP);
+
+    DebugLogger::init(Serial, LogLevel::INFO);
     DebugLogger::info("Debug logger initialized");
 
     StateTracker::setState(SystemState::INITIALIZING);
-    DebugLogger::info("System state: %s", StateTracker::getCurrentStateString());
+    DebugLogger::info("Initial system state: %s", StateTracker::getCurrentStateString());
 
-    // Initialize FastLED
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(BRIGHTNESS);
-
     DebugLogger::info("FastLED initialized");
 
-    StateTracker::setState(SystemState::RUNNING);
-    DebugLogger::info("Setup complete. System state: %s", StateTracker::getCurrentStateString());
-    
-    // Test DebugLogger
-    uint8_t testX = 5;
-    uint8_t testY = 6;
-    DebugLogger::debug("Test debug output: x=%u, y=%u", static_cast<unsigned int>(testX), static_cast<unsigned int>(testY));
+    StateTracker::setState(SystemState::MATRIX_READY);
+    DebugLogger::info("Matrix ready. System state: %s", StateTracker::getCurrentStateString());
 
-    // Test XY function
-    for (uint8_t x = 0; x < 8; x++) {
-        for (uint8_t y = 0; y < 8; y++) {
-            uint16_t index = config.XY(x, y);
-            DebugLogger::debug("XY(%u, %u) = %u", static_cast<unsigned int>(x), static_cast<unsigned int>(y), index);
-        }
-    }
-}
+    scene.loadBitmap(BITMAP_ARRAY, MATRIX_WIDTH, MATRIX_HEIGHT);
+    DebugLogger::info("Scene bitmap loaded");
 
-
-void drawPattern() {
-    // Clear all LEDs
-    FastLED.clear();
-
-    // Draw a simple pattern - a diagonal line
-    for (uint8_t i = 0; i < 8; i++) {
-        DebugLogger::debug("Drawing pixel at (%u, %u)", static_cast<unsigned int>(i), static_cast<unsigned int>(i));
-        uint16_t ledIndex = config.XY(i, i);
-        DebugLogger::debug("LED index for (%u, %u): %u", static_cast<unsigned int>(i), static_cast<unsigned int>(i), ledIndex);
-        if (ledIndex < NUM_LEDS) {
-            leds[ledIndex] = CRGB::Red;
-        } else {
-            DebugLogger::error("LED index out of bounds: %u", ledIndex);
-        }
-    }
-
-    FastLED.show();
+    StateTracker::setState(SystemState::SCENE_LOADED);
+    DebugLogger::info("Setup complete. Final system state: %s", StateTracker::getCurrentStateString());
 }
 
 void loop() {
     static unsigned long lastUpdate = 0;
+    static bool lastButtonState = HIGH;
     unsigned long currentMillis = millis();
+
+    // Check button 0 state
+    bool currentButtonState = digitalRead(PIN_BUTTON);
+    if (currentButtonState == LOW && lastButtonState == HIGH) {
+        // Button was just pressed
+        logSystemState();
+        delay(50);  // Simple debounce
+    }
+    lastButtonState = currentButtonState;
 
     if (currentMillis - lastUpdate >= 1000) {
         DebugLogger::debug("Updating LED pattern");
-        drawPattern();
+        scene.draw(leds);
+        FastLED.show();
         lastUpdate = currentMillis;
     }
 }

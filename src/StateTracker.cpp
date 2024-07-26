@@ -1,14 +1,17 @@
 #include "StateTracker.h"
+#include <string.h>
 
 SystemState StateTracker::s_currentState = SystemState::INITIALIZING;
 
 void StateTracker::setState(SystemState newState) {
-    if (newState != s_currentState) {
-        DebugLogger::info("State changed from %s to %s", 
-                          getStateString(s_currentState), 
-                          getStateString(newState));
-        s_currentState = newState;
-    }
+    const char* oldStateStr = getStateString(s_currentState);
+    const char* newStateStr = getStateString(newState);
+    
+    char buffer[100];
+    snprintf(buffer, sizeof(buffer), "State changed from %s to %s", oldStateStr, newStateStr);
+    DebugLogger::info(buffer);
+    
+    s_currentState = newState;
 }
 
 SystemState StateTracker::getState() {
