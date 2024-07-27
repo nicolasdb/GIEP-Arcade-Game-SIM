@@ -26,6 +26,8 @@ public:
     void setPixelType(uint8_t x, uint8_t y, PixelType type);
     void update();
     void draw(CRGB* leds) const;
+    void setInteractiveGroupState(PixelType group, bool state);
+
 
 private:
     const MatrixConfig& matrixConfig;
@@ -40,4 +42,7 @@ private:
     void cleanupRain();
     CRGB getColorForPixelType(PixelType type) const;
     void updateRain();
+
+    bool interactiveGroupState[4] = {false, false, false, false};
+
 };

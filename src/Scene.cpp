@@ -41,6 +41,16 @@ void Scene::loadBitmap(const uint32_t* bitmap, uint8_t bitmapWidth, uint8_t bitm
     DebugLogger::info("Bitmap loaded successfully");
 }
 
+void Scene::setInteractiveGroupState(PixelType group, bool state) {
+    if (group >= PixelType::INTERACTIVE_1 && group <= PixelType::INTERACTIVE_4) {
+        int index = static_cast<int>(group) - static_cast<int>(PixelType::INTERACTIVE_1);
+        interactiveGroupState[index] = state;
+        DebugLogger::info("Interactive group %d set to %s", 
+                          index + 1, 
+                          interactiveGroupState[index] ? "ON" : "OFF");
+    }
+}
+
 PixelType Scene::getPixelType(uint8_t x, uint8_t y) const {
     if (x >= width || y >= height) {
         DebugLogger::error("Invalid coordinates: (%u, %u)", static_cast<unsigned int>(x), static_cast<unsigned int>(y));
@@ -120,11 +130,16 @@ void Scene::updateRain() {
     }
 }
 
+// Update the getColorForPixelType method to use the interactiveGroupState
 CRGB Scene::getColorForPixelType(PixelType type) const {
     if (static_cast<int>(type) >= static_cast<int>(PixelType::INTERACTIVE_1) && 
         static_cast<int>(type) <= static_cast<int>(PixelType::INTERACTIVE_4)) {
-        uint8_t shade = static_cast<int>(type) - static_cast<int>(PixelType::INTERACTIVE_1);
-        return CRGB(0, 255 - shade * 20, 0);  // Darken the green slightly for each group
+        int index = static_cast<int>(type) - static_cast<int>(PixelType::INTERACTIVE_1);
+        if (interactiveGroupState[index]) {
+            return CRGB(0, 255, 0);  // Bright green when active
+        } else {
+            return CRGB(0, 64, 0);   // Dim green when inactive
+        }
     }
 
     switch (type) {

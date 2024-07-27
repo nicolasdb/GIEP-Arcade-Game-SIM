@@ -10,7 +10,7 @@
 #define BRIGHTNESS  30
 #define LED_TYPE    WS2812B
 #define COLOR_ORDER GRB
-#define PIN_BUTTON  0  // Built-in button pin
+#define DEBUG_BUTTON  0  // Built-in button pin
 
 // Define matrix dimensions
 const uint8_t MATRIX_WIDTH = 8;
@@ -18,6 +18,20 @@ const uint8_t MATRIX_HEIGHT = 8;
 
 // Calculate total number of LEDs
 #define NUM_LEDS (MATRIX_WIDTH * MATRIX_HEIGHT)
+
+// Define button pins
+const uint8_t BUTTON_PINS[] = {1, 3, 5, 7};
+const uint8_t NUM_BUTTONS = sizeof(BUTTON_PINS) / sizeof(BUTTON_PINS[0]);
+int lastDebugButtonState = HIGH;
+unsigned long lastDebugDebounceTime = 0;
+
+
+// Debounce parameters
+const unsigned long DEBOUNCE_DELAY = 50; // milliseconds
+unsigned long lastDebounceTime[NUM_BUTTONS] = {0};
+bool buttonState[NUM_BUTTONS] = {HIGH, HIGH, HIGH, HIGH};
+bool lastButtonState[NUM_BUTTONS] = {HIGH, HIGH, HIGH, HIGH};
+
 
 CRGB leds[NUM_LEDS];
 MatrixConfig config(MATRIX_WIDTH, MATRIX_HEIGHT, MatrixOrientation::TOP_LEFT_HORIZONTAL, false);
@@ -45,32 +59,17 @@ void logSystemState() {
     DebugLogger::info("Scene loaded: Yes");
 }
 
-void testPattern() {
-    for(int i = 0; i < NUM_LEDS; i++) {
-        leds[i] = CRGB::Red;
-    }
-    FastLED.show();
-    delay(1000);
-    
-    for(int i = 0; i < NUM_LEDS; i++) {
-        leds[i] = CRGB::Green;
-    }
-    FastLED.show();
-    delay(1000);
-    
-    for(int i = 0; i < NUM_LEDS; i++) {
-        leds[i] = CRGB::Blue;
-    }
-    FastLED.show();
-    delay(1000);
-}
-
 void setup() {
     Serial.begin(115200);
     while (!Serial) { ; }
     delay(1000);
 
-    pinMode(PIN_BUTTON, INPUT_PULLUP);
+    pinMode(DEBUG_BUTTON, INPUT_PULLUP);
+
+    // Initialize button pins
+    for (uint8_t i = 0; i < NUM_BUTTONS; i++) {
+        pinMode(BUTTON_PINS[i], INPUT_PULLUP);
+    }
 
     DebugLogger::init(Serial, LogLevel::INFO);
     DebugLogger::info("Debug logger initialized");
@@ -92,32 +91,68 @@ void setup() {
     DebugLogger::info("Setup complete. Final system state: %s", StateTracker::getCurrentStateString());
 
 
-    // Run test pattern
-    // DebugLogger::info("Running test pattern");
-    // testPattern();
-    // DebugLogger::info("Test pattern complete");
 }
+
+
+void handleButtons() {
+    for (uint8_t i = 0; i < NUM_BUTTONS; i++) {
+        int reading = digitalRead(BUTTON_PINS[i]);
+        if (reading != lastButtonState[i]) {
+            lastDebounceTime[i] = millis();
+        }
+
+        if ((millis() - lastDebounceTime[i]) > DEBOUNCE_DELAY) {
+            if (reading != buttonState[i]) {
+                buttonState[i] = reading;
+                if (buttonState[i] == LOW) {
+                    // Button is pressed
+                    DebugLogger::info("Button %d pressed", i + 1);
+                    scene.setInteractiveGroupState(static_cast<PixelType>(static_cast<int>(PixelType::INTERACTIVE_1) + i), true);
+                } else {
+                    // Button is released
+                    DebugLogger::info("Button %d released", i + 1);
+                    scene.setInteractiveGroupState(static_cast<PixelType>(static_cast<int>(PixelType::INTERACTIVE_1) + i), false);
+                }
+            }
+        }
+        lastButtonState[i] = reading;
+    }
+}
+
+void handleDebugButton() {
+    int reading = digitalRead(DEBUG_BUTTON);
+    if (reading != lastDebugButtonState) {
+        lastDebugDebounceTime = millis();
+    }
+
+    if ((millis() - lastDebugDebounceTime) > DEBOUNCE_DELAY) {
+        if (reading == LOW && lastDebugButtonState == HIGH) {
+            // Debug button is pressed (falling edge)
+            logSystemState();
+        }
+    }
+
+    lastDebugButtonState = reading;
+}
+
 
 void loop() {
     static unsigned long lastUpdate = 0;
-    static bool lastButtonState = HIGH;
     unsigned long currentMillis = millis();
 
-    // Check button 0 state
-    bool currentButtonState = digitalRead(PIN_BUTTON);
-    if (currentButtonState == LOW && lastButtonState == HIGH) {
-        // Button was just pressed
+    // Check debug button state
+    if (digitalRead(DEBUG_BUTTON) == LOW) {
         logSystemState();
-        delay(50);  // Simple debounce
+        delay(50);  // Simple debounce for debug button
     }
-    lastButtonState = currentButtonState;
+
+    // Handle interactive buttons
+    handleButtons();
 
     if (currentMillis - lastUpdate >= 100) {
-        DebugLogger::debug("Updating LED pattern");
         scene.update(); // Update rain
         scene.draw(leds);
         FastLED.show();
-        DebugLogger::info("LEDs updated");
         lastUpdate = currentMillis;
     }
 }
