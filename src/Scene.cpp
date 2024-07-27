@@ -1,14 +1,16 @@
 #include "Scene.h"
 
-Scene::Scene(const MatrixConfig& config) : matrixConfig(config), width(config.getWidth()), height(config.getHeight()) {
+Scene::Scene(const MatrixConfig& config) : matrixConfig(config), width(config.getWidth()), height(config.getHeight()), sewerLevel(0), basinLevel(0) {
     initializePixelMap();
     initializeRain();
+    memset(giepStates, 0, sizeof(giepStates));
 }
 
 Scene::~Scene() {
     cleanupPixelMap();
     cleanupRain();
 }
+
 
 void Scene::loadBitmap(const uint32_t* bitmap, uint8_t bitmapWidth, uint8_t bitmapHeight) {
     if (bitmapWidth != width || bitmapHeight != height) {
@@ -19,15 +21,15 @@ void Scene::loadBitmap(const uint32_t* bitmap, uint8_t bitmapWidth, uint8_t bitm
     for (uint16_t i = 0; i < width * height; i++) {
         uint32_t color = bitmap[i];
         if ((color & 0x00FF00) == 0x00FF00) {
-            // It's a shade of green, determine which interactive group it belongs to
+            // It's a shade of green, determine which GIEP group it belongs to
             uint8_t shade = (color >> 16) & 0xFF;  // Extract the red component
-            if (shade < 4) {  // Assuming we have 4 interactive groups
-                pixelMap[i] = static_cast<PixelType>(static_cast<int>(PixelType::INTERACTIVE_1) + shade);
+            if (shade >= 0 && shade <= 7) {  // Changed to 0-7 for 8 GIEP types
+                pixelMap[i] = static_cast<PixelType>(static_cast<int>(PixelType::GIEP_1) + shade);
             } else {
                 pixelMap[i] = PixelType::ACTIVE;  // Default to ACTIVE if it's an unknown shade
             }
         } else {
-            switch (color) {
+           switch (color) {
                 case 0xFFFFFF: pixelMap[i] = PixelType::ACTIVE; break;
                 case 0x000000: pixelMap[i] = PixelType::BUILDING; break;
                 case 0xFFFF00: pixelMap[i] = PixelType::SEWER; break;
@@ -41,14 +43,34 @@ void Scene::loadBitmap(const uint32_t* bitmap, uint8_t bitmapWidth, uint8_t bitm
     DebugLogger::info("Bitmap loaded successfully");
 }
 
-void Scene::setInteractiveGroupState(PixelType group, bool state) {
-    if (group >= PixelType::INTERACTIVE_1 && group <= PixelType::INTERACTIVE_4) {
-        int index = static_cast<int>(group) - static_cast<int>(PixelType::INTERACTIVE_1);
-        interactiveGroupState[index] = state;
-        DebugLogger::info("Interactive group %d set to %s", 
-                          index + 1, 
-                          interactiveGroupState[index] ? "ON" : "OFF");
+
+void Scene::loadDefaultScene() {
+    // Define your default bitmap here
+    const uint32_t DEFAULT_BITMAP[64] = {
+        0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF,
+        0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF,
+        0xFFFFFF, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0x01FF00, 0xFFFFFF, 0x02FF00, 0xFFFFFF,
+        0x03FF00, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0x000000, 0x000000, 0x000000, 0x000000,
+        0xFFFFFF, 0xFFFFFF, 0x000000, 0x000000, 0x000000, 0xFFFF00, 0x0000FF, 0x000000,
+        0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x000000, 0xFFFF00, 0x0000FF, 0x000000,
+        0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x000000, 0xFFFF00, 0x0000FF, 0x000000,
+        0xFFFFFF, 0x04FF00, 0xFFFFFF, 0xFFFFFF, 0x000000, 0xFFFF00, 0x0000FF, 0x000000
+    };
+    loadBitmap(DEFAULT_BITMAP, width, height);
+}
+
+void Scene::setGIEPState(uint8_t giepIndex, bool state) {
+    if (giepIndex < 8) {
+        giepStates[giepIndex] = state;
     }
+}
+
+void Scene::setSewerLevel(float level) {
+    sewerLevel = constrain(level, 0, 1);
+}
+
+void Scene::setBasinLevel(float level) {
+    basinLevel = constrain(level, 0, 1);
 }
 
 PixelType Scene::getPixelType(uint8_t x, uint8_t y) const {
@@ -132,24 +154,32 @@ void Scene::updateRain() {
 
 // Update the getColorForPixelType method to use the interactiveGroupState
 CRGB Scene::getColorForPixelType(PixelType type) const {
-    if (static_cast<int>(type) >= static_cast<int>(PixelType::INTERACTIVE_1) && 
-        static_cast<int>(type) <= static_cast<int>(PixelType::INTERACTIVE_4)) {
-        int index = static_cast<int>(type) - static_cast<int>(PixelType::INTERACTIVE_1);
-        if (interactiveGroupState[index]) {
-            return CRGB(0, 255, 0);  // Bright green when active
-        } else {
-            return CRGB(0, 64, 0);   // Dim green when inactive
-        }
-    }
-
     switch (type) {
-        case PixelType::ACTIVE: return CRGB(0xFFFFFF);
-        case PixelType::BUILDING: return CRGB(0x000000);
-        case PixelType::SEWER: return CRGB(0xFFFF00);
-        case PixelType::BASIN: return CRGB(0x00FFFF);
-        case PixelType::RESERVED_1: return CRGB(0xFF0000);
-        case PixelType::RESERVED_2: return CRGB(0xFF00FF);
-        default: return CRGB(0xFFFFFF);
+        case PixelType::ACTIVE:
+            return CRGB(10, 10, 10);  // Dim white for active areas
+        case PixelType::BUILDING:
+            return CRGB::Black;
+        case PixelType::SEWER:
+            return CRGB(255 * sewerLevel, 255 * sewerLevel, 0);  // Yellow, intensity based on level
+        case PixelType::BASIN:
+            return CRGB(0, 0, 255 * basinLevel);  // Blue, intensity based on level
+        case PixelType::GIEP_1:
+        case PixelType::GIEP_2:
+        case PixelType::GIEP_3:
+        case PixelType::GIEP_4:
+        case PixelType::GIEP_5:
+        case PixelType::GIEP_6:
+        case PixelType::GIEP_7:
+        case PixelType::GIEP_8: {
+            int index = static_cast<int>(type) - static_cast<int>(PixelType::GIEP_1);
+            return giepStates[index] ? CRGB(0, 255, 0) : CRGB(0, 32, 0);  // Bright green (0x00FF00) when active, dim green when inactive
+        }
+        case PixelType::RESERVED_1:
+            return CRGB::Red;
+        case PixelType::RESERVED_2:
+            return CRGB::Magenta;
+        default:
+            return CRGB::Black;
     }
 }
 

@@ -1,10 +1,12 @@
 #include <Arduino.h>
 #include <FastLED.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "DebugLogger.h"
 #include "StateTracker.h"
 #include "MatrixConfig.h"
 #include "Scene.h"
-
+#include "GameLogic.h"
 
 #define LED_PIN     9
 #define BRIGHTNESS  30
@@ -12,64 +14,83 @@
 #define COLOR_ORDER GRB
 #define DEBUG_BUTTON  0  // Built-in button pin
 
-// Define matrix dimensions
 const uint8_t MATRIX_WIDTH = 8;
 const uint8_t MATRIX_HEIGHT = 8;
-
-// Calculate total number of LEDs
 #define NUM_LEDS (MATRIX_WIDTH * MATRIX_HEIGHT)
 
-// Define button pins
-const uint8_t BUTTON_PINS[] = {1, 3, 5, 7};
+const uint8_t BUTTON_PINS[] = {1, 3, 5, 7, 10, 11, 12, 13, 14};  // Added more pins for 9 buttons
 const uint8_t NUM_BUTTONS = sizeof(BUTTON_PINS) / sizeof(BUTTON_PINS[0]);
-int lastDebugButtonState = HIGH;
-unsigned long lastDebugDebounceTime = 0;
-
-
-// Debounce parameters
-const unsigned long DEBOUNCE_DELAY = 50; // milliseconds
-unsigned long lastDebounceTime[NUM_BUTTONS] = {0};
-bool buttonState[NUM_BUTTONS] = {HIGH, HIGH, HIGH, HIGH};
-bool lastButtonState[NUM_BUTTONS] = {HIGH, HIGH, HIGH, HIGH};
-
 
 CRGB leds[NUM_LEDS];
-MatrixConfig config(MATRIX_WIDTH, MATRIX_HEIGHT, MatrixOrientation::TOP_LEFT_HORIZONTAL, false);
-Scene scene(config);
+MatrixConfig matrixConfig(MATRIX_WIDTH, MATRIX_HEIGHT, MatrixOrientation::TOP_LEFT_HORIZONTAL, false);
+Scene scene(matrixConfig);
+GameLogic gameLogic(scene);
 
-// Define the bitmap for our scene
-const uint32_t BITMAP_ARRAY[NUM_LEDS] = {
-  0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF,
-  0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF,
-  0xFFFFFF, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0x00FF00, 0xFFFFFF,
-  0x00FF00, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0x000000, 0x000000, 0x000000, 0x000000,
-  0xFFFFFF, 0xFFFFFF, 0x000000, 0x000000, 0x000000, 0xFFFF00, 0x0000FF, 0x000000,
-  0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x000000, 0xFFFF00, 0x0000FF, 0x000000,
-  0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x000000, 0xFFFF00, 0x0000FF, 0x000000,
-  0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x000000, 0xFFFF00, 0x0000FF, 0x000000
-};
+// Debounce variables for debug button
+bool lastDebugButtonState = HIGH;
+unsigned long lastDebugButtonDebounceTime = 0;
+unsigned long debugButtonDebounceDelay = 50;
 
-void logSystemState() {
-    DebugLogger::info("Current system state: %s", StateTracker::getCurrentStateString());
-    DebugLogger::info("Matrix config: %dx%d, %s, %s",
-                      config.getWidth(), config.getHeight(),
-                      config.getOrientation() == MatrixOrientation::TOP_LEFT_HORIZONTAL ? "TOP_LEFT_HORIZONTAL" : "Other",
-                      config.isZigzag() ? "zigzag" : "normal");
-    DebugLogger::info("Total LEDs: %d", NUM_LEDS);
-    DebugLogger::info("Scene loaded: Yes");
+void buttonTask(void* parameter) {
+    TickType_t lastWakeTime = xTaskGetTickCount();
+    const TickType_t frequency = pdMS_TO_TICKS(10);  // Check every 10ms
+    bool lastDebugButtonState = HIGH;
+
+    while (true) {
+        // Handle game buttons
+        for (uint8_t i = 0; i < NUM_BUTTONS; i++) {
+            bool buttonState = digitalRead(BUTTON_PINS[i]) == LOW;
+            gameLogic.handleButton(i, buttonState);
+        }
+
+        // Handle debug button
+        bool debugButtonState = digitalRead(DEBUG_BUTTON) == LOW;
+        if (debugButtonState != lastDebugButtonState) {
+            if (debugButtonState == LOW) {
+                DebugLogger::info("Debug button pressed");
+                DebugLogger::info("Current game state: %s", gameLogic.getStateString());
+                // Add more debug information as needed
+            }
+            lastDebugButtonState = debugButtonState;
+        }
+
+        vTaskDelayUntil(&lastWakeTime, frequency);
+    }
+}
+
+
+void gameUpdateTask(void* parameter) {
+    TickType_t lastWakeTime = xTaskGetTickCount();
+    const TickType_t frequency = pdMS_TO_TICKS(100);  // Update every 100ms
+
+    while (true) {
+        gameLogic.update();
+        vTaskDelayUntil(&lastWakeTime, frequency);
+    }
+}
+
+void ledUpdateTask(void* parameter) {
+    TickType_t lastWakeTime = xTaskGetTickCount();
+    const TickType_t frequency = pdMS_TO_TICKS(33);  // ~30fps
+
+    while (true) {
+        scene.update();
+        scene.draw(leds);
+        FastLED.show();
+        vTaskDelayUntil(&lastWakeTime, frequency);
+    }
 }
 
 void setup() {
     Serial.begin(115200);
-    while (!Serial) { ; }
-    delay(1000);
-
-    pinMode(DEBUG_BUTTON, INPUT_PULLUP);
-
-    // Initialize button pins
-    for (uint8_t i = 0; i < NUM_BUTTONS; i++) {
-        pinMode(BUTTON_PINS[i], INPUT_PULLUP);
+    // Wait for serial or timeout after 3 seconds
+    unsigned long startTime = millis();
+    while (!Serial && millis() - startTime < 3000) {
+        ; // wait for serial port to connect. Needed for native USB port only
     }
+
+    // while (!Serial) { ; }
+    // delay(1000);
 
     DebugLogger::init(Serial, LogLevel::INFO);
     DebugLogger::info("Debug logger initialized");
@@ -77,82 +98,34 @@ void setup() {
     StateTracker::setState(SystemState::INITIALIZING);
     DebugLogger::info("Initial system state: %s", StateTracker::getCurrentStateString());
 
+    pinMode(DEBUG_BUTTON, INPUT_PULLUP);
+    for (uint8_t i = 0; i < NUM_BUTTONS; i++) {
+        pinMode(BUTTON_PINS[i], INPUT_PULLUP);
+    }
+
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(BRIGHTNESS);
+        // Clear all LEDs
+    FastLED.clear();
+    FastLED.show();
     DebugLogger::info("FastLED initialized");
 
     StateTracker::setState(SystemState::MATRIX_READY);
     DebugLogger::info("Matrix ready. System state: %s", StateTracker::getCurrentStateString());
 
-    scene.loadBitmap(BITMAP_ARRAY, MATRIX_WIDTH, MATRIX_HEIGHT);
-    DebugLogger::info("Scene bitmap loaded");
+    scene.loadDefaultScene();
+    DebugLogger::info("Default scene loaded");
 
     StateTracker::setState(SystemState::SCENE_LOADED);
     DebugLogger::info("Setup complete. Final system state: %s", StateTracker::getCurrentStateString());
 
+    xTaskCreatePinnedToCore(buttonTask, "ButtonTask", 2048, NULL, 1, NULL, 0);
+    xTaskCreatePinnedToCore(gameUpdateTask, "GameUpdateTask", 4096, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(ledUpdateTask, "LEDUpdateTask", 2048, NULL, 1, NULL, 1);
 
+    DebugLogger::info("FreeRTOS tasks created");
 }
-
-
-void handleButtons() {
-    for (uint8_t i = 0; i < NUM_BUTTONS; i++) {
-        int reading = digitalRead(BUTTON_PINS[i]);
-        if (reading != lastButtonState[i]) {
-            lastDebounceTime[i] = millis();
-        }
-
-        if ((millis() - lastDebounceTime[i]) > DEBOUNCE_DELAY) {
-            if (reading != buttonState[i]) {
-                buttonState[i] = reading;
-                if (buttonState[i] == LOW) {
-                    // Button is pressed
-                    DebugLogger::info("Button %d pressed", i + 1);
-                    scene.setInteractiveGroupState(static_cast<PixelType>(static_cast<int>(PixelType::INTERACTIVE_1) + i), true);
-                } else {
-                    // Button is released
-                    DebugLogger::info("Button %d released", i + 1);
-                    scene.setInteractiveGroupState(static_cast<PixelType>(static_cast<int>(PixelType::INTERACTIVE_1) + i), false);
-                }
-            }
-        }
-        lastButtonState[i] = reading;
-    }
-}
-
-void handleDebugButton() {
-    int reading = digitalRead(DEBUG_BUTTON);
-    if (reading != lastDebugButtonState) {
-        lastDebugDebounceTime = millis();
-    }
-
-    if ((millis() - lastDebugDebounceTime) > DEBOUNCE_DELAY) {
-        if (reading == LOW && lastDebugButtonState == HIGH) {
-            // Debug button is pressed (falling edge)
-            logSystemState();
-        }
-    }
-
-    lastDebugButtonState = reading;
-}
-
 
 void loop() {
-    static unsigned long lastUpdate = 0;
-    unsigned long currentMillis = millis();
-
-    // Check debug button state
-    if (digitalRead(DEBUG_BUTTON) == LOW) {
-        logSystemState();
-        delay(50);  // Simple debounce for debug button
-    }
-
-    // Handle interactive buttons
-    handleButtons();
-
-    if (currentMillis - lastUpdate >= 100) {
-        scene.update(); // Update rain
-        scene.draw(leds);
-        FastLED.show();
-        lastUpdate = currentMillis;
-    }
+    // Empty, as tasks are handling everything
 }

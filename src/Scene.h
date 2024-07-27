@@ -5,29 +5,35 @@
 #include "DebugLogger.h"
 
 enum class PixelType {
-    ACTIVE,       // White: Rain can pass through
-    BUILDING,     // Black: Blocks rain
-    SEWER,        // Yellow: Sewer level gauge
-    BASIN,        // Blue: Basin d'orage level gauge
-    INTERACTIVE_1 = 100,  // First shade of green
-    INTERACTIVE_2,        // Second shade of green
-    INTERACTIVE_3,        // Third shade of green
-    INTERACTIVE_4,        // Fourth shade of green
-    RESERVED_1 = 200,   // Red: Reserved for future use
-    RESERVED_2          // Pink: Reserved for future use
+    ACTIVE,
+    BUILDING,
+    SEWER,
+    BASIN,
+    GIEP_1,
+    GIEP_2,
+    GIEP_3,
+    GIEP_4,
+    GIEP_5,
+    GIEP_6,
+    GIEP_7,
+    GIEP_8,
+    RESERVED_1,
+    RESERVED_2
 };
 
 class Scene {
 public:
     Scene(const MatrixConfig& config);
-    ~Scene();  // Add destructor declaration
+    ~Scene();
     void loadBitmap(const uint32_t* bitmap, uint8_t width, uint8_t height);
+    void loadDefaultScene();
     PixelType getPixelType(uint8_t x, uint8_t y) const;
     void setPixelType(uint8_t x, uint8_t y, PixelType type);
     void update();
     void draw(CRGB* leds) const;
-    void setInteractiveGroupState(PixelType group, bool state);
-
+    void setGIEPState(uint8_t giepIndex, bool state);
+    void setSewerLevel(float level);
+    void setBasinLevel(float level);
 
 private:
     const MatrixConfig& matrixConfig;
@@ -35,6 +41,9 @@ private:
     uint8_t* rainDrops;
     uint8_t width;
     uint8_t height;
+    bool giepStates[8];
+    float sewerLevel;
+    float basinLevel;
 
     void initializePixelMap();
     void initializeRain();
@@ -42,7 +51,4 @@ private:
     void cleanupRain();
     CRGB getColorForPixelType(PixelType type) const;
     void updateRain();
-
-    bool interactiveGroupState[4] = {false, false, false, false};
-
 };
