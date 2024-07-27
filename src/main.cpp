@@ -25,13 +25,14 @@ Scene scene(config);
 
 // Define the bitmap for our scene
 const uint32_t BITMAP_ARRAY[NUM_LEDS] = {
-  0xFFFFFF, 0x00FF00, 0xFFFFFF, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF,
-  0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x000000, 0x000000, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF,
-  0xFFFFFF, 0xFFFF00, 0xFFFFFF, 0xFFFFFF, 0x000000, 0xFFFF00, 0xFFFFFF, 0xFFFFFF,
-  0xFFFFFF, 0x000000, 0x000000, 0xFFFF00, 0x000000, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF,
-  0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000,
-  0x000000, 0x00FF00, 0x00FF00, 0x00FF00, 0x000000, 0x00FF00, 0x00FF00, 0x000000,
-  0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000
+  0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF,
+  0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF,
+  0xFFFFFF, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0x00FF00, 0xFFFFFF,
+  0x00FF00, 0xFFFFFF, 0x00FF00, 0xFFFFFF, 0x000000, 0x000000, 0x000000, 0x000000,
+  0xFFFFFF, 0xFFFFFF, 0x000000, 0x000000, 0x000000, 0xFFFF00, 0x0000FF, 0x000000,
+  0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x000000, 0xFFFF00, 0x0000FF, 0x000000,
+  0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x000000, 0xFFFF00, 0x0000FF, 0x000000,
+  0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0xFFFFFF, 0x000000, 0xFFFF00, 0x0000FF, 0x000000
 };
 
 void logSystemState() {
@@ -42,6 +43,26 @@ void logSystemState() {
                       config.isZigzag() ? "zigzag" : "normal");
     DebugLogger::info("Total LEDs: %d", NUM_LEDS);
     DebugLogger::info("Scene loaded: Yes");
+}
+
+void testPattern() {
+    for(int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = CRGB::Red;
+    }
+    FastLED.show();
+    delay(1000);
+    
+    for(int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = CRGB::Green;
+    }
+    FastLED.show();
+    delay(1000);
+    
+    for(int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = CRGB::Blue;
+    }
+    FastLED.show();
+    delay(1000);
 }
 
 void setup() {
@@ -69,6 +90,12 @@ void setup() {
 
     StateTracker::setState(SystemState::SCENE_LOADED);
     DebugLogger::info("Setup complete. Final system state: %s", StateTracker::getCurrentStateString());
+
+
+    // Run test pattern
+    // DebugLogger::info("Running test pattern");
+    // testPattern();
+    // DebugLogger::info("Test pattern complete");
 }
 
 void loop() {
@@ -85,10 +112,12 @@ void loop() {
     }
     lastButtonState = currentButtonState;
 
-    if (currentMillis - lastUpdate >= 1000) {
+    if (currentMillis - lastUpdate >= 100) {
         DebugLogger::debug("Updating LED pattern");
+        scene.update(); // Update rain
         scene.draw(leds);
         FastLED.show();
+        DebugLogger::info("LEDs updated");
         lastUpdate = currentMillis;
     }
 }
