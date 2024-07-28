@@ -2,7 +2,7 @@
 #include "config.h"
 
 GameLogic::GameLogic(Scene& scene) : scene(scene), currentState(GameState::IDLE), 
-    stateStartTime(0), sewerLevel(0), basinLevel(0) {
+    stateStartTime(0), sewerLevel(0), basinLevel(0), basinGateOpen(false) {
     memset(buttonStates, 0, sizeof(buttonStates));
 }
 
@@ -11,19 +11,28 @@ void GameLogic::update() {
     updateWaterLevels();
     updateRainIntensity();
     handleGIEPEffects();
+    handleBasinGate();
     checkForStateTransition();
 }
 
 void GameLogic::handleButton(uint8_t buttonIndex, bool isPressed) {
     if (buttonIndex < 8) {  // GIEP buttons
-        scene.setGIEPState(buttonIndex, isPressed);
-        DebugLogger::info("GIEP Button %d %s", buttonIndex + 1, isPressed ? "pressed" : "released");
+        handleGIEPButton(buttonIndex, isPressed);
     } else if (buttonIndex == 8) {  // Basin gate button
-        if (isPressed) {
-            handleBasinGate();
-        }
-        DebugLogger::info("Basin Gate Button %s", isPressed ? "pressed" : "released");
+        handleBasinGateButton(isPressed);
     }
+}
+
+void GameLogic::handleGIEPButton(uint8_t buttonIndex, bool isPressed) {
+    buttonStates[buttonIndex] = isPressed;
+    scene.setGIEPState(buttonIndex, isPressed);
+    DebugLogger::info("GIEP Button %d %s", buttonIndex + 1, isPressed ? "pressed" : "released");
+}
+
+void GameLogic::handleBasinGateButton(bool isPressed) {
+    buttonStates[8] = isPressed;
+    basinGateOpen = isPressed;
+    DebugLogger::info("Basin Gate Button %s", isPressed ? "pressed" : "released");
 }
 
 const char* GameLogic::getStateString() const {
@@ -127,7 +136,7 @@ void GameLogic::handleGIEPEffects() {
 }
 
 void GameLogic::handleBasinGate() {
-    if (buttonStates[8]) {  // If the gate button is pressed
+    if (basinGateOpen) {  // Use the basinGateOpen flag instead of checking buttonStates directly
         float transferAmount = min(BASIN_GATE_TRANSFER_RATE * sewerLevel, BASIN_OVERFLOW_THRESHOLD - basinLevel);
         sewerLevel -= transferAmount;
         basinLevel += transferAmount;
@@ -139,6 +148,8 @@ void GameLogic::handleBasinGate() {
                           transferAmount, sewerLevel, basinLevel);
     }
 }
+
+
 void GameLogic::checkForStateTransition() {
     unsigned long currentTime = millis();
     unsigned long stateDuration = currentTime - stateStartTime;

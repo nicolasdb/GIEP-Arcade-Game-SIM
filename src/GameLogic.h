@@ -19,7 +19,7 @@ public:
     void update();
     void handleButton(uint8_t buttonIndex, bool isPressed);
     GameState getState() const { return currentState; }
-    const char* getStateString() const;
+    const char* getStateString() const;  
 
 private:
     Scene& scene;
@@ -28,6 +28,7 @@ private:
     float sewerLevel;
     float basinLevel;
     bool buttonStates[9];  // For 9 buttons
+    bool basinGateOpen;
 
     void transitionState(GameState newState);
     void updateWaterLevels();
@@ -37,5 +38,7 @@ private:
     void handleBasinGate();
     void resetGame(); 
     void updateWeatherCycle();  
+    void handleGIEPButton(uint8_t buttonIndex, bool isPressed);
+    void handleBasinGateButton(bool isPressed);
 
 };
