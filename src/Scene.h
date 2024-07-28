@@ -3,6 +3,7 @@
 #include <FastLED.h>
 #include "MatrixConfig.h"
 #include "DebugLogger.h"
+#include "config.h"
 
 enum class PixelType {
     ACTIVE,
@@ -34,6 +35,9 @@ public:
     void setGIEPState(uint8_t giepIndex, bool state);
     void setSewerLevel(float level);
     void setBasinLevel(float level);
+    void setRainIntensity(float intensity);
+    float getRainIntensity() const;
+    void setRainVisible(bool visible); 
 
 private:
     const MatrixConfig& matrixConfig;
@@ -44,6 +48,8 @@ private:
     bool giepStates[8];
     float sewerLevel;
     float basinLevel;
+    float rainIntensity;
+    bool isRainVisible;
 
     void initializePixelMap();
     void initializeRain();
@@ -51,4 +57,6 @@ private:
     void cleanupRain();
     CRGB getColorForPixelType(PixelType type) const;
     void updateRain();
+    void drawWaterLevel(CRGB* leds, uint8_t startX, uint8_t startY, uint8_t width, uint8_t height, float level, CRGB fullColor, CRGB emptyColor) const;
+
 };

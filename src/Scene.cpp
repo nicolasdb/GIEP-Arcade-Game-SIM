@@ -1,6 +1,7 @@
 #include "Scene.h"
 
-Scene::Scene(const MatrixConfig& config) : matrixConfig(config), width(config.getWidth()), height(config.getHeight()), sewerLevel(0), basinLevel(0) {
+Scene::Scene(const MatrixConfig& config) : matrixConfig(config), width(config.getWidth()), height(config.getHeight()), 
+    rainIntensity(0), isRainVisible(true), sewerLevel(0), basinLevel(0) {
     initializePixelMap();
     initializeRain();
     memset(giepStates, 0, sizeof(giepStates));
@@ -59,20 +60,6 @@ void Scene::loadDefaultScene() {
     loadBitmap(DEFAULT_BITMAP, width, height);
 }
 
-void Scene::setGIEPState(uint8_t giepIndex, bool state) {
-    if (giepIndex < 8) {
-        giepStates[giepIndex] = state;
-    }
-}
-
-void Scene::setSewerLevel(float level) {
-    sewerLevel = constrain(level, 0, 1);
-}
-
-void Scene::setBasinLevel(float level) {
-    basinLevel = constrain(level, 0, 1);
-}
-
 PixelType Scene::getPixelType(uint8_t x, uint8_t y) const {
     if (x >= width || y >= height) {
         DebugLogger::error("Invalid coordinates: (%u, %u)", static_cast<unsigned int>(x), static_cast<unsigned int>(y));
@@ -99,12 +86,48 @@ void Scene::draw(CRGB* leds) const {
             uint16_t index = matrixConfig.XY(x, y);
             CRGB pixelColor = getColorForPixelType(pixelMap[y * width + x]);
             
-            // If there's a raindrop here, blend with blue
-            if (rainDrops[x] == y) {
+            // If there's a raindrop here and rain is visible, blend with blue
+            if (isRainVisible && rainDrops[x] == y) {
                 pixelColor = blend(pixelColor, CRGB::Blue, 128);
             }
             
             leds[index] = pixelColor;
+        }
+    }
+
+    // Draw sewer level
+    drawWaterLevel(leds, SEWER_START_X, SEWER_START_Y, SEWER_WIDTH, SEWER_HEIGHT, sewerLevel, SEWER_COLOR, SEWER_EMPTY_COLOR);
+
+    // Draw basin level
+    drawWaterLevel(leds, BASIN_START_X, BASIN_START_Y, BASIN_WIDTH, BASIN_HEIGHT, basinLevel, BASIN_COLOR, BASIN_EMPTY_COLOR);
+}
+
+
+void Scene::setGIEPState(uint8_t giepIndex, bool state) {
+    if (giepIndex < 8) {
+        giepStates[giepIndex] = state;
+    }
+}
+
+void Scene::setSewerLevel(float level) {
+    sewerLevel = constrain(level, 0, 1);
+}
+
+void Scene::setBasinLevel(float level) {
+    basinLevel = constrain(level, 0, 1);
+}
+
+void Scene::drawWaterLevel(CRGB* leds, uint8_t startX, uint8_t startY, uint8_t width, uint8_t height, float level, CRGB fullColor, CRGB emptyColor) const {
+    uint8_t filledPixels = round(level * height);
+
+    for (uint8_t y = 0; y < height; y++) {
+        for (uint8_t x = 0; x < width; x++) {
+            uint16_t index = matrixConfig.XY(startX + x, startY + (height - 1 - y));
+            if (y < filledPixels) {
+                leds[index] = fullColor;
+            } else {
+                leds[index] = emptyColor;
+            }
         }
     }
 }
@@ -117,6 +140,11 @@ void Scene::initializePixelMap() {
     DebugLogger::info("PixelMap initialized: %ux%u", static_cast<unsigned int>(width), static_cast<unsigned int>(height));
 }
 
+void Scene::cleanupPixelMap() {
+    delete[] pixelMap;
+    DebugLogger::info("PixelMap cleaned up");
+}
+
 void Scene::initializeRain() {
     rainDrops = new uint8_t[width];
     for (uint8_t x = 0; x < width; x++) {
@@ -124,16 +152,31 @@ void Scene::initializeRain() {
     }
 }
 
-void Scene::cleanupPixelMap() {
-    delete[] pixelMap;
-    DebugLogger::info("PixelMap cleaned up");
+void Scene::setRainIntensity(float intensity) {
+    rainIntensity = intensity;
+}
+
+float Scene::getRainIntensity() const {
+    return rainIntensity;
 }
 
 void Scene::cleanupRain() {
     delete[] rainDrops;
 }
 
+void Scene::setRainVisible(bool visible) {
+    isRainVisible = visible;
+}
+
 void Scene::updateRain() {
+    if (!isRainVisible) {
+        // Clear all raindrops when rain is not visible
+        for (uint8_t x = 0; x < width; x++) {
+            rainDrops[x] = height;
+        }
+        return;
+    }
+
     for (uint8_t x = 0; x < width; x++) {
         // Move existing raindrops down
         if (rainDrops[x] < height) {
@@ -141,7 +184,7 @@ void Scene::updateRain() {
         }
         
         // Randomly create new raindrops
-        if (rainDrops[x] >= height && random8() < 20) { // 20/255 chance of new raindrop
+        if (rainDrops[x] >= height && random8() < rainIntensity * 255) {
             rainDrops[x] = 0;
         }
         
@@ -156,13 +199,12 @@ void Scene::updateRain() {
 CRGB Scene::getColorForPixelType(PixelType type) const {
     switch (type) {
         case PixelType::ACTIVE:
-            return CRGB(10, 10, 10);  // Dim white for active areas
+            return CRGB(16, 16, 16);  // Dim white for active areas
         case PixelType::BUILDING:
             return CRGB::Black;
         case PixelType::SEWER:
-            return CRGB(255 * sewerLevel, 255 * sewerLevel, 0);  // Yellow, intensity based on level
         case PixelType::BASIN:
-            return CRGB(0, 0, 255 * basinLevel);  // Blue, intensity based on level
+            return CRGB::Black;  // These are now handled in the draw method
         case PixelType::GIEP_1:
         case PixelType::GIEP_2:
         case PixelType::GIEP_3:
@@ -172,7 +214,7 @@ CRGB Scene::getColorForPixelType(PixelType type) const {
         case PixelType::GIEP_7:
         case PixelType::GIEP_8: {
             int index = static_cast<int>(type) - static_cast<int>(PixelType::GIEP_1);
-            return giepStates[index] ? CRGB(0, 255, 0) : CRGB(0, 32, 0);  // Bright green (0x00FF00) when active, dim green when inactive
+            return giepStates[index] ? CRGB(0, 255, 0) : CRGB(0, 32, 0);  // Bright green when active, dim green when inactive
         }
         case PixelType::RESERVED_1:
             return CRGB::Red;
@@ -182,4 +224,3 @@ CRGB Scene::getColorForPixelType(PixelType type) const {
             return CRGB::Black;
     }
 }
-

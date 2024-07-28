@@ -36,4 +36,6 @@ private:
     void handleGIEPEffects();
     void handleBasinGate();
     void resetGame(); 
+    void updateWeatherCycle();  
+
 };

@@ -7,6 +7,7 @@
 #include "MatrixConfig.h"
 #include "Scene.h"
 #include "GameLogic.h"
+#include "config.h"
 
 #define LED_PIN     9
 #define BRIGHTNESS  30
@@ -18,7 +19,7 @@ const uint8_t MATRIX_WIDTH = 8;
 const uint8_t MATRIX_HEIGHT = 8;
 #define NUM_LEDS (MATRIX_WIDTH * MATRIX_HEIGHT)
 
-const uint8_t BUTTON_PINS[] = {1, 3, 5, 7, 10, 11, 12, 13, 14};  // Added more pins for 9 buttons
+const uint8_t BUTTON_PINS[] = {1, 3, 5, 7, 10, 11, 12, 13, 14};  // 9 game buttons
 const uint8_t NUM_BUTTONS = sizeof(BUTTON_PINS) / sizeof(BUTTON_PINS[0]);
 
 CRGB leds[NUM_LEDS];
@@ -26,10 +27,19 @@ MatrixConfig matrixConfig(MATRIX_WIDTH, MATRIX_HEIGHT, MatrixOrientation::TOP_LE
 Scene scene(matrixConfig);
 GameLogic gameLogic(scene);
 
-// Debounce variables for debug button
-bool lastDebugButtonState = HIGH;
-unsigned long lastDebugButtonDebounceTime = 0;
-unsigned long debugButtonDebounceDelay = 50;
+void smoothStartup() {
+    for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = CRGB::Black;
+    }
+    FastLED.show();
+    delay(50);  // Short delay to ensure LEDs are off
+
+    for (int brightness = 0; brightness <= BRIGHTNESS; brightness++) {
+        FastLED.setBrightness(brightness);
+        FastLED.show();
+        delay(10);  // Gradual increase in brightness
+    }
+}
 
 void buttonTask(void* parameter) {
     TickType_t lastWakeTime = xTaskGetTickCount();
@@ -58,7 +68,6 @@ void buttonTask(void* parameter) {
     }
 }
 
-
 void gameUpdateTask(void* parameter) {
     TickType_t lastWakeTime = xTaskGetTickCount();
     const TickType_t frequency = pdMS_TO_TICKS(100);  // Update every 100ms
@@ -83,14 +92,12 @@ void ledUpdateTask(void* parameter) {
 
 void setup() {
     Serial.begin(115200);
+    
     // Wait for serial or timeout after 3 seconds
     unsigned long startTime = millis();
     while (!Serial && millis() - startTime < 3000) {
         ; // wait for serial port to connect. Needed for native USB port only
     }
-
-    // while (!Serial) { ; }
-    // delay(1000);
 
     DebugLogger::init(Serial, LogLevel::INFO);
     DebugLogger::info("Debug logger initialized");
@@ -104,10 +111,9 @@ void setup() {
     }
 
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setBrightness(BRIGHTNESS);
-        // Clear all LEDs
-    FastLED.clear();
-    FastLED.show();
+    FastLED.setBrightness(0);  // Start with brightness 0
+    smoothStartup();  // Implement smooth startup
+    
     DebugLogger::info("FastLED initialized");
 
     StateTracker::setState(SystemState::MATRIX_READY);
@@ -120,7 +126,7 @@ void setup() {
     DebugLogger::info("Setup complete. Final system state: %s", StateTracker::getCurrentStateString());
 
     xTaskCreatePinnedToCore(buttonTask, "ButtonTask", 2048, NULL, 1, NULL, 0);
-    xTaskCreatePinnedToCore(gameUpdateTask, "GameUpdateTask", 4096, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(gameUpdateTask, "GameUpdateTask", 4096, NULL, 1, NULL, 1);  // Increased stack size
     xTaskCreatePinnedToCore(ledUpdateTask, "LEDUpdateTask", 2048, NULL, 1, NULL, 1);
 
     DebugLogger::info("FreeRTOS tasks created");

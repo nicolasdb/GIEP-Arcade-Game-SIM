@@ -1,4 +1,5 @@
 #include "GameLogic.h"
+#include "config.h"
 
 GameLogic::GameLogic(Scene& scene) : scene(scene), currentState(GameState::IDLE), 
     stateStartTime(0), sewerLevel(0), basinLevel(0) {
@@ -6,6 +7,7 @@ GameLogic::GameLogic(Scene& scene) : scene(scene), currentState(GameState::IDLE)
 }
 
 void GameLogic::update() {
+    updateWeatherCycle();
     updateWaterLevels();
     updateRainIntensity();
     handleGIEPEffects();
@@ -13,18 +15,14 @@ void GameLogic::update() {
 }
 
 void GameLogic::handleButton(uint8_t buttonIndex, bool isPressed) {
-    if (buttonIndex < 9) {
-        if (buttonStates[buttonIndex] != isPressed) {
-            buttonStates[buttonIndex] = isPressed;
-            DebugLogger::info("Button %d %s", buttonIndex + 1, isPressed ? "pressed" : "released");
-            
-            if (buttonIndex == 8) {  // 9th button (index 8) controls basin gate
-                handleBasinGate();
-            } else {
-                // Handle GIEP buttons
-                scene.setGIEPState(buttonIndex, isPressed);
-            }
+    if (buttonIndex < 8) {  // GIEP buttons
+        scene.setGIEPState(buttonIndex, isPressed);
+        DebugLogger::info("GIEP Button %d %s", buttonIndex + 1, isPressed ? "pressed" : "released");
+    } else if (buttonIndex == 8) {  // Basin gate button
+        if (isPressed) {
+            handleBasinGate();
         }
+        DebugLogger::info("Basin Gate Button %s", isPressed ? "pressed" : "released");
     }
 }
 
@@ -47,47 +45,141 @@ void GameLogic::transitionState(GameState newState) {
     stateStartTime = millis();
 }
 
+void GameLogic::updateWeatherCycle() {
+    unsigned long currentTime = millis();
+    unsigned long cycleTime = (currentTime - stateStartTime) % (IDLE_DURATION + RAINING_DURATION);
+
+    if (currentState == GameState::IDLE || currentState == GameState::RAINING) {
+        if (cycleTime < IDLE_DURATION) {
+            if (currentState != GameState::IDLE) {
+                currentState = GameState::IDLE;
+                scene.setRainVisible(false);
+                DebugLogger::info("Weather changed to IDLE");
+            }
+        } else {
+            if (currentState != GameState::RAINING) {
+                currentState = GameState::RAINING;
+                scene.setRainVisible(true);
+                DebugLogger::info("Weather changed to RAINING");
+            }
+        }
+    }
+}
+
+void GameLogic::updateWaterLevels() {
+    float rainIntensity = scene.getRainIntensity();
+    
+    // Calculate GIEP effect
+    float giepEffect = 0;
+    for (int i = 0; i < 8; i++) {
+        if (buttonStates[i]) {
+            giepEffect += GIEP_EFFECT_STRENGTH;
+        }
+    }
+
+    // Update sewer level
+    if (currentState == GameState::RAINING || currentState == GameState::HEAVY || currentState == GameState::STORM) {
+        sewerLevel += rainIntensity - giepEffect - SEWER_DRAIN_RATE;
+    } else {
+        sewerLevel -= SEWER_DRAIN_RATE;
+    }
+    sewerLevel = max(0.0f, min(sewerLevel, SEWER_OVERFLOW_THRESHOLD));
+
+    scene.setSewerLevel(sewerLevel);
+    scene.setBasinLevel(basinLevel);
+
+    DebugLogger::info("Sewer Level: %.2f, Basin Level: %.2f", sewerLevel, basinLevel);
+}
+
+void GameLogic::updateRainIntensity() {
+    float intensity;
+    switch (currentState) {
+        case GameState::IDLE:
+            intensity = RAIN_INTENSITY_IDLE;
+            scene.setRainVisible(false);
+            break;
+        case GameState::RAINING:
+            intensity = RAIN_INTENSITY_RAINING;
+            scene.setRainVisible(true);
+            break;
+        case GameState::HEAVY:
+            intensity = RAIN_INTENSITY_HEAVY;
+            scene.setRainVisible(true);
+            break;
+        case GameState::STORM:
+            intensity = RAIN_INTENSITY_STORM;
+            scene.setRainVisible(true);
+            break;
+        default:
+            intensity = 0.0f;
+            scene.setRainVisible(false);
+            break;
+    }
+    scene.setRainIntensity(intensity);
+}
+
+void GameLogic::handleGIEPEffects() {
+    // Implement GIEP effects based on button states
+    // For now, we're just updating the GIEP states in the Scene
+    for (int i = 0; i < 8; i++) {
+        scene.setGIEPState(i, buttonStates[i]);
+    }
+}
+
+void GameLogic::handleBasinGate() {
+    if (buttonStates[8]) {  // If the gate button is pressed
+        float transferAmount = min(BASIN_GATE_TRANSFER_RATE * sewerLevel, BASIN_OVERFLOW_THRESHOLD - basinLevel);
+        sewerLevel -= transferAmount;
+        basinLevel += transferAmount;
+        
+        scene.setSewerLevel(sewerLevel);
+        scene.setBasinLevel(basinLevel);
+        
+        DebugLogger::info("Gate opened. Transferred %.2f. New levels: Sewer %.2f, Basin %.2f", 
+                          transferAmount, sewerLevel, basinLevel);
+    }
+}
 void GameLogic::checkForStateTransition() {
     unsigned long currentTime = millis();
     unsigned long stateDuration = currentTime - stateStartTime;
 
     switch (currentState) {
         case GameState::IDLE:
-            if (stateDuration >= 30000) {  // 30 seconds
+            if (stateDuration >= IDLE_DURATION) {
                 transitionState(GameState::RAINING);
             }
             break;
         case GameState::RAINING:
-            if (stateDuration >= 30000) {
+            if (stateDuration >= RAINING_DURATION) {
                 transitionState(GameState::HEAVY);
             }
             break;
         case GameState::HEAVY:
-            if (stateDuration >= 40000) {
+            if (stateDuration >= HEAVY_DURATION) {
                 transitionState(GameState::STORM);
             }
             break;
         case GameState::STORM:
-            if (stateDuration >= 40000) {
+            if (stateDuration >= STORM_DURATION) {
                 transitionState(GameState::WIN);
             }
             break;
         case GameState::FLOOD:
         case GameState::CANAL:
         case GameState::WIN:
-            if (stateDuration >= 10000) {  // 10 seconds display for end states
+            if (stateDuration >= END_STATE_DURATION) {
                 resetGame();
             }
             break;
     }
 
-    // Check for flood and canal overflow conditions
-    if (sewerLevel >= 1.0 && currentState != GameState::FLOOD && currentState != GameState::CANAL && currentState != GameState::WIN) {
+    if (sewerLevel >= SEWER_OVERFLOW_THRESHOLD && currentState != GameState::FLOOD && currentState != GameState::CANAL && currentState != GameState::WIN) {
         transitionState(GameState::FLOOD);
-    } else if (basinLevel >= 1.0 && currentState != GameState::FLOOD && currentState != GameState::CANAL && currentState != GameState::WIN) {
+    } else if (basinLevel >= BASIN_OVERFLOW_THRESHOLD && currentState != GameState::FLOOD && currentState != GameState::CANAL && currentState != GameState::WIN) {
         transitionState(GameState::CANAL);
     }
 }
+
 
 void GameLogic::resetGame() {
     DebugLogger::info("Resetting game to IDLE state");
@@ -101,54 +193,7 @@ void GameLogic::resetGame() {
     transitionState(GameState::IDLE);
 }
 
-void GameLogic::updateRainIntensity() {
-    // TODO: Update rain intensity based on current state
-}
 
-void GameLogic::handleGIEPEffects() {
-    // Implement GIEP effects based on button states
-    // For now, we're just updating the GIEP states in the Scene
-    for (int i = 0; i < 8; i++) {
-        scene.setGIEPState(i, buttonStates[i]);
-    }
-}
 
-void GameLogic::handleBasinGate() {
-    // Implement basin gate logic
-    // For example, transfer water from sewer to basin when the 9th button is pressed
-    if (buttonStates[8]) {
-        float transferAmount = 0.1 * sewerLevel;  // Transfer 10% of sewer water to basin
-        sewerLevel -= transferAmount;
-        basinLevel += transferAmount;
-        scene.setSewerLevel(sewerLevel);
-        scene.setBasinLevel(basinLevel);
-    }
-}
 
-void GameLogic::updateWaterLevels() {
-    // Implement water level updates based on current state and GIEP effects
-    // This is a simplified example; you'll need to adjust based on your specific game mechanics
-    float rainIntensity = 0;
-    switch (currentState) {
-        case GameState::RAINING: rainIntensity = 0.001; break;
-        case GameState::HEAVY: rainIntensity = 0.002; break;
-        case GameState::STORM: rainIntensity = 0.003; break;
-        default: break;
-    }
-
-    // Calculate GIEP effect (simplified)
-    float giepEffect = 0;
-    for (int i = 0; i < 8; i++) {
-        if (buttonStates[i]) {
-            giepEffect += 0.0005;  // Each active GIEP reduces water increase
-        }
-    }
-
-    // Update sewer level
-    sewerLevel += rainIntensity - giepEffect;
-    sewerLevel = max(0.0f, min(sewerLevel, 1.0f));  // Clamp between 0 and 1
-
-    scene.setSewerLevel(sewerLevel);
-    scene.setBasinLevel(basinLevel);
-}
 
