@@ -1,8 +1,8 @@
 #pragma once
 // Hardware configuration
 #define LED_PIN 9
-#define MATRIX_WIDTH 8
-#define MATRIX_HEIGHT 8
+#define MATRIX_WIDTH 25
+#define MATRIX_HEIGHT 25
 #define NUM_LEDS (MATRIX_WIDTH * MATRIX_HEIGHT)
 #define BRIGHTNESS 30
 #define LED_TYPE WS2812B

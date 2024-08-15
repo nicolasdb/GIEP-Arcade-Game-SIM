@@ -26,7 +26,7 @@ const uint8_t BUTTON_PINS[] = {1, 3, 5, 7, 10, 11, 12, 13, 14};  // 9 game butto
 const uint8_t NUM_BUTTONS = sizeof(BUTTON_PINS) / sizeof(BUTTON_PINS[0]);
 
 CRGB leds[NUM_LEDS];
-MatrixConfig matrixConfig(MATRIX_WIDTH, MATRIX_HEIGHT, MatrixOrientation::TOP_LEFT_HORIZONTAL, false);
+MatrixConfig matrixConfig(MATRIX_WIDTH, MATRIX_HEIGHT, MatrixOrientation::BOTTOM_RIGHT_VERTICAL, true);
 Scene scene(matrixConfig);
 GameLogic gameLogic(scene);
 ButtonHandler buttonHandler(BUTTON_PINS, DEBUG_BUTTON_PIN, gameLogic); 

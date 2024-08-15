@@ -51,6 +51,14 @@ uint16_t MatrixConfig::XY(uint8_t x, uint8_t y) const {
             }
             i = (x * height) + y;
             break;
+        case MatrixOrientation::BOTTOM_RIGHT_VERTICAL:
+            x = (width - 1) - x;
+            y = (height - 1) - y;
+            if (zigzag && x % 2 == 1) {
+                y = (height - 1) - y;
+            }
+            i = (x * height) + y;
+            break;
     }
     DebugLogger::debug("XY mapping result: (%u, %u) -> %u", static_cast<unsigned int>(x), static_cast<unsigned int>(y), i);
     return i;
@@ -72,6 +80,7 @@ const char* MatrixConfig::orientationToString(MatrixOrientation o) {
         case MatrixOrientation::TOP_LEFT_VERTICAL: return "TOP_LEFT_VERTICAL";
         case MatrixOrientation::BOTTOM_LEFT_HORIZONTAL: return "BOTTOM_LEFT_HORIZONTAL";
         case MatrixOrientation::BOTTOM_LEFT_VERTICAL: return "BOTTOM_LEFT_VERTICAL";
+        case MatrixOrientation::BOTTOM_RIGHT_VERTICAL: return "BOTTOM_RIGHT_VERTICAL";
         default: return "UNKNOWN";
     }
 }
