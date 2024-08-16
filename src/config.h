@@ -4,7 +4,7 @@
 #define MATRIX_WIDTH 25
 #define MATRIX_HEIGHT 25
 #define NUM_LEDS (MATRIX_WIDTH * MATRIX_HEIGHT)
-#define BRIGHTNESS 35
+#define BRIGHTNESS 100
 #define LED_TYPE WS2813
 #define COLOR_ORDER GRB
 
@@ -33,15 +33,15 @@
 #define BASIN_GATE_TRANSFER_RATE 0.1f
 
 // Sewer and Basin dimensions and positions
-#define SEWER_HEIGHT 3
+#define SEWER_HEIGHT 7
 #define SEWER_WIDTH 5
-#define SEWER_START_X 4
-#define SEWER_START_Y 19
+#define SEWER_START_X 3
+#define SEWER_START_Y 16
 
-#define BASIN_HEIGHT 3
-#define BASIN_WIDTH 5
-#define BASIN_START_X 13
-#define BASIN_START_Y 19
+#define BASIN_HEIGHT 4
+#define BASIN_WIDTH 6
+#define BASIN_START_X 10
+#define BASIN_START_Y 20
 
 // Color definitions
 #define COLOR_WHITE 0xFFFFFF
@@ -50,6 +50,10 @@
 #define COLOR_GREEN_2 0x0AFF00
 #define COLOR_GREEN_3 0x08FF00
 #define COLOR_GREEN_4 0x03FF00
+#define COLOR_GREEN_5 0x12FF00
+#define COLOR_GREEN_6 0x0DFF00
+#define COLOR_GREEN_7 0x0FFF00
+#define COLOR_GREEN_8 0x14FF00
 #define COLOR_YELLOW 0xFFFF00
 #define COLOR_BLUE 0x0000FF
 
@@ -58,6 +62,17 @@
 #define BASIN_COLOR CRGB::Blue
 #define SEWER_EMPTY_COLOR CRGB(16, 16, 0)  // Dim yellow
 #define BASIN_EMPTY_COLOR CRGB(0, 0, 16)   // Dim blue
+
+// Specific brightness levels
+#define ACTIVE_BRIGHTNESS 16
+#define GIEP_ACTIVE_BRIGHTNESS 255
+#define GIEP_INACTIVE_BRIGHTNESS 40
+#define RESERVED_BRIGHTNESS 128
+#define RAIN_BRIGHTNESS 128
+#define SEWER_BRIGHTNESS 255
+#define SEWER_EMPTY_BRIGHTNESS 16
+#define BASIN_BRIGHTNESS 255
+#define BASIN_EMPTY_BRIGHTNESS 16
 
 // Game balance parameters
 #define SEWER_OVERFLOW_THRESHOLD 1.0f
