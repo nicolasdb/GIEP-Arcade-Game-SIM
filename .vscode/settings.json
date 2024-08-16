@@ -1,3 +1,6 @@
 {
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": true,
+    "CodeGPT.apiKey": "Ollama",
+    "CodeGPT.Autocomplete.provider": "Ollama - codellama:code",
+    "CodeGPT.Autocomplete.enabled": false
 }
