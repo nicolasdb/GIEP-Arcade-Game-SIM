@@ -4,8 +4,8 @@
 #define MATRIX_WIDTH 25
 #define MATRIX_HEIGHT 25
 #define NUM_LEDS (MATRIX_WIDTH * MATRIX_HEIGHT)
-#define BRIGHTNESS 30
-#define LED_TYPE WS2812B
+#define BRIGHTNESS 35
+#define LED_TYPE WS2813
 #define COLOR_ORDER GRB
 
 // Button configuration
@@ -33,15 +33,25 @@
 #define BASIN_GATE_TRANSFER_RATE 0.1f
 
 // Sewer and Basin dimensions and positions
-#define SEWER_HEIGHT 4
-#define SEWER_WIDTH 1
-#define SEWER_START_X 5
-#define SEWER_START_Y 4
+#define SEWER_HEIGHT 3
+#define SEWER_WIDTH 5
+#define SEWER_START_X 4
+#define SEWER_START_Y 19
 
-#define BASIN_HEIGHT 4
-#define BASIN_WIDTH 1
-#define BASIN_START_X 6
-#define BASIN_START_Y 4
+#define BASIN_HEIGHT 3
+#define BASIN_WIDTH 5
+#define BASIN_START_X 13
+#define BASIN_START_Y 19
+
+// Color definitions
+#define COLOR_WHITE 0xFFFFFF
+#define COLOR_BLACK 0x000000
+#define COLOR_GREEN_1 0x05FF00
+#define COLOR_GREEN_2 0x0AFF00
+#define COLOR_GREEN_3 0x08FF00
+#define COLOR_GREEN_4 0x03FF00
+#define COLOR_YELLOW 0xFFFF00
+#define COLOR_BLUE 0x0000FF
 
 // LED colors
 #define SEWER_COLOR CRGB::Yellow
@@ -66,6 +76,6 @@
 
 // The smooth startup sequence gradually increases the LED brightness, which might help prevent the flash you're seeing. If you're still experiencing the flash, it could indeed be related to power delivery. 
 // You might want to consider:
-// Using a larger capacitor (e.g., 2200µF or even 4700µF).
-// Adding a small resistor (e.g., 100-330 ohms) in series with the data line to the first LED.
+// Using a larger capacitor (e.g., 1000µF) + a ceramic 104
+// Adding a small resistor (e.g., 470 ohms) in series with the data line to the first LED.
 // Ensuring all ground connections are solid, including between the power supply, Arduino, and LED strip.
