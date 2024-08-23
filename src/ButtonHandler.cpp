@@ -17,6 +17,8 @@ ButtonHandler::ButtonHandler(MCP23017Handler& mcpHandler, GameLogic& gameLogic)
     pinMode(BASIN_GATE_BUTTON_PIN, INPUT_PULLUP);
     pinMode(BASIN_GATE_LED_PIN, OUTPUT);
     pinMode(DEBUG_BUTTON_PIN, INPUT_PULLUP);
+
+    DebugLogger::info("ButtonHandler initialized. Basin Gate Button Pin: %d, LED Pin: %d", BASIN_GATE_BUTTON_PIN, BASIN_GATE_LED_PIN);
 }
 
 void ButtonHandler::update() {
@@ -52,16 +54,22 @@ void ButtonHandler::updateMcpButtons(uint32_t now) {
 
 void ButtonHandler::updateBasinGateButton(uint32_t now) {
     int reading = digitalRead(BASIN_GATE_BUTTON_PIN);
+    DebugLogger::debug("Basin Gate Button reading: %d", reading);
+    
     if (reading != _lastBasinGateState) {
         _lastBasinGateDebounceTime = now;
+        DebugLogger::debug("Basin Gate Button state changed. New state: %d", reading);
     }
+    
     if ((now - _lastBasinGateDebounceTime) > DEBOUNCE_DELAY) {
         if (reading != _basinGateButtonState) {
             _basinGateButtonState = reading;
+            DebugLogger::debug("Basin Gate Button debounced. New state: %d", _basinGateButtonState);
+            
             if (_basinGateButtonState == LOW) {
-                onButtonPressed(NUM_MCP_BUTTONS);
+                onBasinGateButtonPressed();
             } else {
-                onButtonReleased(NUM_MCP_BUTTONS);
+                onBasinGateButtonReleased();
             }
         }
     }
@@ -85,23 +93,25 @@ void ButtonHandler::updateDebugButton(uint32_t now) {
 }
 
 void ButtonHandler::onButtonPressed(uint8_t button) {
-    if (button < NUM_MCP_BUTTONS) {
-        DebugLogger::info("GIEP Button %d pressed", button + 1);
-    } else if (button == NUM_MCP_BUTTONS) {
-        DebugLogger::info("Basin Gate Button pressed");
-        digitalWrite(BASIN_GATE_LED_PIN, HIGH);
-    }
+    DebugLogger::info("GIEP Button %d pressed", button + 1);
     _gameLogic.handleButton(button, true);
 }
 
 void ButtonHandler::onButtonReleased(uint8_t button) {
-    if (button < NUM_MCP_BUTTONS) {
-        DebugLogger::info("GIEP Button %d released", button + 1);
-    } else if (button == NUM_MCP_BUTTONS) {
-        DebugLogger::info("Basin Gate Button released");
-        digitalWrite(BASIN_GATE_LED_PIN, LOW);
-    }
+    DebugLogger::info("GIEP Button %d released", button + 1);
     _gameLogic.handleButton(button, false);
+}
+
+void ButtonHandler::onBasinGateButtonPressed() {
+    DebugLogger::info("Basin Gate Button pressed");
+    digitalWrite(BASIN_GATE_LED_PIN, HIGH);
+    _gameLogic.handleBasinGateButton(true);
+}
+
+void ButtonHandler::onBasinGateButtonReleased() {
+    DebugLogger::info("Basin Gate Button released");
+    digitalWrite(BASIN_GATE_LED_PIN, LOW);
+    _gameLogic.handleBasinGateButton(false);
 }
 
 void ButtonHandler::onDebugButtonPressed() {

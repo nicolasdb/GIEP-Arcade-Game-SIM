@@ -50,24 +50,32 @@
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_BLACK 0x000000
 
-// GIEP Button colors, MCP GPIO connections for buttons (GPIOA) and LEDs (GPIOB)
-#define COLOR_GREEN_1 0x05FF00  // Button 1 - GPIOA 0, LED - GPIOB 0
-#define COLOR_GREEN_2 0x0AFF00  // Button 2 - GPIOA 1, LED - GPIOB 1
-#define COLOR_GREEN_3 0x08FF00  // Button 3 - GPIOA 2, LED - GPIOB 2
-#define COLOR_GREEN_4 0x03FF00  // Button 4 - GPIOA 3, LED - GPIOB 3
-#define COLOR_GREEN_5 0x12FF00  // Button 5 - GPIOA 4, LED - GPIOB 4
-#define COLOR_GREEN_6 0x0DFF00  // Button 6 - GPIOA 5, LED - GPIOB 5
-#define COLOR_GREEN_7 0x0FFF00  // Button 7 - GPIOA 6, LED - GPIOB 6
-#define COLOR_GREEN_8 0x14FF00  // Button 8 - GPIOA 7, LED - GPIOB 7
+// Updated GIEP Button colors, MCP GPIO connections for buttons (GPIOA) and LEDs (GPIOB)
+#define COLOR_GREEN_1 0x00AB00  // Button 1 - GPIOA 0, LED - GPIOB 0
+#define COLOR_GREEN_2 0x003200  // Button 2 - GPIOA 1, LED - GPIOB 1
+#define COLOR_GREEN_3 0x005700  // Button 3 - GPIOA 2, LED - GPIOB 2
+#define COLOR_GREEN_4 0x007300  // Button 4 - GPIOA 3, LED - GPIOB 3
+#define COLOR_GREEN_5 0x008F00  // Button 5 - GPIOA 4, LED - GPIOB 4
+#define COLOR_GREEN_6 0x00C700  // Button 6 - GPIOA 5, LED - GPIOB 5
+#define COLOR_GREEN_7 0x00E300  // Button 7 - GPIOA 6, LED - GPIOB 6
+#define COLOR_GREEN_8 0x00FF00  // Button 8 - GPIOA 7, LED - GPIOB 7
 
 #define COLOR_YELLOW 0xFFFF00
 #define COLOR_BLUE 0x0000FF
+
+// New color definitions
+#define COLOR_RED 0xFF0000  // for bassin_gate
+#define COLOR_MAGENTA 0xFF00FF
+#define COLOR_PURPLE 0x6400FF  // for the river
 
 // LED colors
 #define SEWER_COLOR CRGB::Yellow
 #define BASIN_COLOR CRGB::Blue
 #define SEWER_EMPTY_COLOR CRGB(16, 16, 0)  // Dim yellow
 #define BASIN_EMPTY_COLOR CRGB(0, 0, 16)   // Dim blue
+#define BASIN_GATE_COLOR CRGB::Red
+#define BASIN_OVERFLOW_COLOR CRGB::Green
+#define RIVER_COLOR CRGB(100, 0, 255)  // Purple color for the river
 
 // Main brighness
 #define BRIGHTNESS 30
@@ -75,12 +83,15 @@
 #define ACTIVE_BRIGHTNESS 16
 #define GIEP_ACTIVE_BRIGHTNESS 255
 #define GIEP_INACTIVE_BRIGHTNESS 40
-#define RESERVED_BRIGHTNESS 128
 #define RAIN_BRIGHTNESS 128
 #define SEWER_BRIGHTNESS 255
 #define SEWER_EMPTY_BRIGHTNESS 16
 #define BASIN_BRIGHTNESS 255
 #define BASIN_EMPTY_BRIGHTNESS 16
+#define BASIN_GATE_BRIGHTNESS 255
+#define BASIN_GATE_INACTIVE_BRIGHTNESS 40
+#define BASIN_OVERFLOW_BRIGHTNESS 255
+#define RIVER_BRIGHTNESS 128
 
 // Game balance parameters
 #define SEWER_OVERFLOW_THRESHOLD 1.0f

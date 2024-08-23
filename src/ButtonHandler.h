@@ -30,5 +30,7 @@ private:
     void updateDebugButton(uint32_t now);
     void onButtonPressed(uint8_t button);
     void onButtonReleased(uint8_t button);
+    void onBasinGateButtonPressed();
+    void onBasinGateButtonReleased();
     void onDebugButtonPressed();
 };

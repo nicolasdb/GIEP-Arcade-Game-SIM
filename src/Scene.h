@@ -18,8 +18,9 @@ enum class PixelType {
     GIEP_6,
     GIEP_7,
     GIEP_8,
-    RESERVED_1,
-    RESERVED_2
+    BASIN_GATE,
+    BASIN_OVERFLOW,
+    RIVER
 };
 
 class Scene {
@@ -33,6 +34,7 @@ public:
     void update();
     void draw(CRGB* leds) const;
     void setGIEPState(uint8_t giepIndex, bool state);
+    void setBasinGateState(bool state);
     void setSewerLevel(float level);
     void setBasinLevel(float level);
     void setRainIntensity(float intensity);
@@ -46,6 +48,7 @@ private:
     uint8_t width;
     uint8_t height;
     bool giepStates[8];
+    bool basinGateActive;
     float sewerLevel;
     float basinLevel;
     float rainIntensity;
@@ -58,5 +61,4 @@ private:
     CRGB getColorForPixelType(PixelType type) const;
     void updateRain();
     void drawWaterLevel(CRGB* leds, uint8_t startX, uint8_t startY, uint8_t width, uint8_t height, float level, CRGB fullColor, CRGB emptyColor) const;
-
 };

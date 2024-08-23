@@ -18,8 +18,10 @@ public:
     GameLogic(Scene& scene);
     void update();
     void handleButton(uint8_t buttonIndex, bool isPressed);
+    void handleBasinGateButton(bool isPressed);
     GameState getState() const { return currentState; }
     const char* getStateString() const;  
+    void initializeGameState();
 
 private:
     Scene& scene;
@@ -27,7 +29,7 @@ private:
     unsigned long stateStartTime;
     float sewerLevel;
     float basinLevel;
-    bool buttonStates[9];  // For 9 buttons
+    bool buttonStates[8];  // For 8 GIEP buttons
     bool basinGateOpen;
 
     void transitionState(GameState newState);
@@ -39,6 +41,4 @@ private:
     void resetGame(); 
     void updateWeatherCycle();  
     void handleGIEPButton(uint8_t buttonIndex, bool isPressed);
-    void handleBasinGateButton(bool isPressed);
-
 };

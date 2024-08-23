@@ -20,7 +20,7 @@
 #define NUM_LEDS (MATRIX_WIDTH * MATRIX_HEIGHT)
 
 CRGB leds[NUM_LEDS];
-MatrixConfig matrixConfig(MATRIX_WIDTH, MATRIX_HEIGHT, MatrixOrientation::BOTTOM_RIGHT_VERTICAL, true);
+MatrixConfig matrixConfig(MATRIX_WIDTH, MATRIX_HEIGHT, MatrixOrientation::BOTTOM_LEFT_HORIZONTAL, true);
 Scene scene(matrixConfig);
 GameLogic gameLogic(scene);
 MCP23017Handler mcpHandler(MCP23017_ADDRESS);

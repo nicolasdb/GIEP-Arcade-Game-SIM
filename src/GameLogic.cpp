@@ -1,9 +1,18 @@
 #include "GameLogic.h"
 #include "config.h"
 
-GameLogic::GameLogic(Scene& scene) : scene(scene), currentState(GameState::IDLE), 
+GameLogic::GameLogic(Scene& scene) : scene(scene), currentState(GameState::RAINING), 
     stateStartTime(0), sewerLevel(0), basinLevel(0), basinGateOpen(false) {
     memset(buttonStates, 0, sizeof(buttonStates));
+    initializeGameState();
+}
+
+void GameLogic::initializeGameState() {
+    currentState = GameState::RAINING;
+    stateStartTime = millis();
+    scene.setRainVisible(true);
+    scene.setRainIntensity(RAIN_INTENSITY_RAINING);
+    DebugLogger::info("Game initialized with RAINING state");
 }
 
 void GameLogic::update() {
@@ -18,8 +27,6 @@ void GameLogic::update() {
 void GameLogic::handleButton(uint8_t buttonIndex, bool isPressed) {
     if (buttonIndex < 8) {  // GIEP buttons
         handleGIEPButton(buttonIndex, isPressed);
-    } else if (buttonIndex == 8) {  // Basin gate button
-        handleBasinGateButton(isPressed);
     }
 }
 
@@ -30,9 +37,10 @@ void GameLogic::handleGIEPButton(uint8_t buttonIndex, bool isPressed) {
 }
 
 void GameLogic::handleBasinGateButton(bool isPressed) {
-    buttonStates[8] = isPressed;
+    DebugLogger::info("handleBasinGateButton called with isPressed: %d", isPressed);
     basinGateOpen = isPressed;
-    DebugLogger::info("Basin Gate Button %s", isPressed ? "pressed" : "released");
+    scene.setBasinGateState(isPressed);
+    DebugLogger::info("Basin Gate Button %s. basinGateOpen: %d", isPressed ? "pressed" : "released", basinGateOpen);
 }
 
 const char* GameLogic::getStateString() const {
@@ -56,22 +64,16 @@ void GameLogic::transitionState(GameState newState) {
 
 void GameLogic::updateWeatherCycle() {
     unsigned long currentTime = millis();
-    unsigned long cycleTime = (currentTime - stateStartTime) % (IDLE_DURATION + RAINING_DURATION);
+    unsigned long stateDuration = currentTime - stateStartTime;
 
-    if (currentState == GameState::IDLE || currentState == GameState::RAINING) {
-        if (cycleTime < IDLE_DURATION) {
-            if (currentState != GameState::IDLE) {
-                currentState = GameState::IDLE;
-                scene.setRainVisible(false);
-                DebugLogger::info("Weather changed to IDLE");
-            }
-        } else {
-            if (currentState != GameState::RAINING) {
-                currentState = GameState::RAINING;
-                scene.setRainVisible(true);
-                DebugLogger::info("Weather changed to RAINING");
-            }
-        }
+    if (currentState == GameState::RAINING && stateDuration >= RAINING_DURATION) {
+        transitionState(GameState::IDLE);
+        scene.setRainVisible(false);
+        DebugLogger::info("Weather changed to IDLE");
+    } else if (currentState == GameState::IDLE && stateDuration >= IDLE_DURATION) {
+        transitionState(GameState::HEAVY);
+        scene.setRainVisible(true);
+        DebugLogger::info("Weather changed to HEAVY");
     }
 }
 
@@ -136,7 +138,8 @@ void GameLogic::handleGIEPEffects() {
 }
 
 void GameLogic::handleBasinGate() {
-    if (basinGateOpen) {  // Use the basinGateOpen flag instead of checking buttonStates directly
+    DebugLogger::debug("handleBasinGate called. basinGateOpen: %d", basinGateOpen);
+    if (basinGateOpen) {
         float transferAmount = min(BASIN_GATE_TRANSFER_RATE * sewerLevel, BASIN_OVERFLOW_THRESHOLD - basinLevel);
         sewerLevel -= transferAmount;
         basinLevel += transferAmount;
@@ -149,19 +152,18 @@ void GameLogic::handleBasinGate() {
     }
 }
 
-
 void GameLogic::checkForStateTransition() {
     unsigned long currentTime = millis();
     unsigned long stateDuration = currentTime - stateStartTime;
 
     switch (currentState) {
-        case GameState::IDLE:
-            if (stateDuration >= IDLE_DURATION) {
-                transitionState(GameState::RAINING);
-            }
-            break;
         case GameState::RAINING:
             if (stateDuration >= RAINING_DURATION) {
+                transitionState(GameState::IDLE);
+            }
+            break;
+        case GameState::IDLE:
+            if (stateDuration >= IDLE_DURATION) {
                 transitionState(GameState::HEAVY);
             }
             break;
@@ -191,20 +193,17 @@ void GameLogic::checkForStateTransition() {
     }
 }
 
-
 void GameLogic::resetGame() {
-    DebugLogger::info("Resetting game to IDLE state");
+    DebugLogger::info("Resetting game to RAINING state");
     sewerLevel = 0;
     basinLevel = 0;
     scene.setSewerLevel(sewerLevel);
     scene.setBasinLevel(basinLevel);
     for (int i = 0; i < 8; i++) {
+        buttonStates[i] = false;
         scene.setGIEPState(i, false);
     }
-    transitionState(GameState::IDLE);
+    basinGateOpen = false;
+    scene.setBasinGateState(false);
+    initializeGameState();
 }
-
-
-
-
-
