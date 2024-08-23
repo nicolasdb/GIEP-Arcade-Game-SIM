@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <FastLED.h>
+#include <vector>
 #include "MatrixConfig.h"
 #include "DebugLogger.h"
 #include "config.h"
@@ -21,6 +22,16 @@ enum class PixelType {
     BASIN_GATE,
     BASIN_OVERFLOW,
     RIVER
+};
+
+struct Point {
+    uint8_t x;
+    uint8_t y;
+    Point(uint8_t _x, uint8_t _y) : x(_x), y(_y) {}
+    
+    bool operator==(const Point& other) const {
+        return x == other.x && y == other.y;
+    }
 };
 
 class Scene {
@@ -53,6 +64,12 @@ private:
     float basinLevel;
     float rainIntensity;
     bool isRainVisible;
+    bool isBasinOverflow;
+    std::vector<Point> sewerShape;
+    std::vector<Point> basinShape;
+    std::vector<Point> basinGateShape;
+    std::vector<Point> basinOverflowShape;
+    std::vector<Point> riverShape;
 
     void initializePixelMap();
     void initializeRain();
@@ -60,5 +77,8 @@ private:
     void cleanupRain();
     CRGB getColorForPixelType(PixelType type) const;
     void updateRain();
-    void drawWaterLevel(CRGB* leds, uint8_t startX, uint8_t startY, uint8_t width, uint8_t height, float level, CRGB fullColor, CRGB emptyColor) const;
+    void drawWaterLevel(CRGB* leds, const std::vector<Point>& shape, float level, CRGB fullColor, CRGB emptyColor) const;
+    void detectShapes();
+    void floodFill(uint8_t startX, uint8_t startY, PixelType targetType, std::vector<Point>& shape, std::vector<bool>& visited);
+    void updateOverflowState();
 };

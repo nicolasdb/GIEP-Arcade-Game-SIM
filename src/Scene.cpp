@@ -1,8 +1,9 @@
 #include "Scene.h"
 #include "config.h"
+#include <stack>
 
 Scene::Scene(const MatrixConfig& config) : matrixConfig(config), width(config.getWidth()), height(config.getHeight()), 
-    rainIntensity(0), isRainVisible(true), sewerLevel(0), basinLevel(0), basinGateActive(false) {
+    rainIntensity(0), isRainVisible(true), sewerLevel(0), basinLevel(0), basinGateActive(false), isBasinOverflow(false) {
     initializePixelMap();
     initializeRain();
     memset(giepStates, 0, sizeof(giepStates));
@@ -72,6 +73,7 @@ void Scene::loadBitmap(const uint32_t* bitmap, uint8_t bitmapWidth, uint8_t bitm
                 break;
         }
     }
+    detectShapes();
     DebugLogger::info("Bitmap loaded successfully");
 }
 
@@ -97,6 +99,7 @@ void Scene::setPixelType(uint8_t x, uint8_t y, PixelType type) {
 
 void Scene::update() {
     updateRain();
+    updateOverflowState();
 }
 
 void Scene::draw(CRGB* leds) const {
@@ -111,26 +114,35 @@ void Scene::draw(CRGB* leds) const {
                 pixelColor = blend(pixelColor, CRGB(0, 0, RAIN_BRIGHTNESS), 128);
             }
             
-            // Handle basin gate specifically
-            if (pixelType == PixelType::BASIN_GATE) {
-                pixelColor = basinGateActive ? CRGB(BASIN_GATE_BRIGHTNESS, 0, 0) : CRGB(BASIN_GATE_INACTIVE_BRIGHTNESS, 0, 0);
-                DebugLogger::debug("Basin Gate Pixel at (%d, %d): Active=%d, Color=(R:%d, G:%d, B:%d)", 
-                    x, y, basinGateActive, pixelColor.r, pixelColor.g, pixelColor.b);
-            }
-            
             leds[index] = pixelColor;
         }
     }
 
     // Draw sewer level
-    drawWaterLevel(leds, SEWER_START_X, SEWER_START_Y, SEWER_WIDTH, SEWER_HEIGHT, sewerLevel, 
-                   CRGB(SEWER_BRIGHTNESS, SEWER_BRIGHTNESS, 0), CRGB(SEWER_EMPTY_BRIGHTNESS, SEWER_EMPTY_BRIGHTNESS, 0));
+    drawWaterLevel(leds, sewerShape, sewerLevel, CRGB(SEWER_BRIGHTNESS, SEWER_BRIGHTNESS, 0), CRGB(SEWER_EMPTY_BRIGHTNESS, SEWER_EMPTY_BRIGHTNESS, 0));
 
     // Draw basin level
-    drawWaterLevel(leds, BASIN_START_X, BASIN_START_Y, BASIN_WIDTH, BASIN_HEIGHT, basinLevel, 
-                   CRGB(0, 0, BASIN_BRIGHTNESS), CRGB(0, 0, BASIN_EMPTY_BRIGHTNESS));
+    drawWaterLevel(leds, basinShape, basinLevel, CRGB(0, 0, BASIN_BRIGHTNESS), CRGB(0, 0, BASIN_EMPTY_BRIGHTNESS));
     
-    DebugLogger::debug("Basin Gate Active: %d", basinGateActive);
+    // Draw basin gate
+    for (const auto& point : basinGateShape) {
+        uint16_t index = matrixConfig.XY(point.x, point.y);
+        leds[index] = basinGateActive ? CRGB(BASIN_GATE_BRIGHTNESS, 0, 0) : CRGB(BASIN_GATE_INACTIVE_BRIGHTNESS, 0, 0);
+    }
+
+    // Draw basin overflow and river
+    if (isBasinOverflow) {
+        for (const auto& point : basinOverflowShape) {
+            uint16_t index = matrixConfig.XY(point.x, point.y);
+            leds[index] = CRGB(BASIN_OVERFLOW_BRIGHTNESS, 0, BASIN_OVERFLOW_BRIGHTNESS);
+        }
+        for (const auto& point : riverShape) {
+            uint16_t index = matrixConfig.XY(point.x, point.y);
+            leds[index] = CRGB(RIVER_BRIGHTNESS, 0, RIVER_BRIGHTNESS);
+        }
+    }
+    
+    DebugLogger::debug("Basin Gate Active: %d, Basin Overflow: %d", basinGateActive, isBasinOverflow);
 }
 
 void Scene::setGIEPState(uint8_t giepIndex, bool state) {
@@ -152,17 +164,25 @@ void Scene::setBasinLevel(float level) {
     basinLevel = constrain(level, 0, 1);
 }
 
-void Scene::drawWaterLevel(CRGB* leds, uint8_t startX, uint8_t startY, uint8_t width, uint8_t height, float level, CRGB fullColor, CRGB emptyColor) const {
-    uint8_t filledPixels = round(level * height);
+void Scene::drawWaterLevel(CRGB* leds, const std::vector<Point>& shape, float level, CRGB fullColor, CRGB emptyColor) const {
+    if (shape.empty()) return;
 
-    for (uint8_t y = 0; y < height; y++) {
-        for (uint8_t x = 0; x < width; x++) {
-            uint16_t index = matrixConfig.XY(startX + x, startY + (height - 1 - y));
-            if (y < filledPixels) {
-                leds[index] = fullColor;
-            } else {
-                leds[index] = emptyColor;
-            }
+    uint8_t minY = height;
+    uint8_t maxY = 0;
+    for (const auto& point : shape) {
+        if (point.y < minY) minY = point.y;
+        if (point.y > maxY) maxY = point.y;
+    }
+
+    uint8_t totalHeight = maxY - minY + 1;
+    uint8_t filledPixels = round(level * totalHeight);
+
+    for (const auto& point : shape) {
+        uint16_t index = matrixConfig.XY(point.x, point.y);
+        if (point.y >= maxY - filledPixels) {
+            leds[index] = fullColor;
+        } else {
+            leds[index] = emptyColor;
         }
     }
 }
@@ -253,10 +273,75 @@ CRGB Scene::getColorForPixelType(PixelType type) const {
         case PixelType::BASIN_GATE:
             return basinGateActive ? CRGB(BASIN_GATE_BRIGHTNESS, 0, 0) : CRGB(BASIN_GATE_INACTIVE_BRIGHTNESS, 0, 0);
         case PixelType::BASIN_OVERFLOW:
-            return CRGB(BASIN_OVERFLOW_BRIGHTNESS, 0, BASIN_OVERFLOW_BRIGHTNESS);
         case PixelType::RIVER:
-            return CRGB(RIVER_BRIGHTNESS, 0, RIVER_BRIGHTNESS);
+            return CRGB::Black;  // These are now handled in the draw method
         default:
             return CRGB::Black;
     }
+}
+
+void Scene::detectShapes() {
+    sewerShape.clear();
+    basinShape.clear();
+    basinGateShape.clear();
+    basinOverflowShape.clear();
+    riverShape.clear();
+
+    std::vector<bool> visited(width * height, false);
+
+    for (uint8_t y = 0; y < height; y++) {
+        for (uint8_t x = 0; x < width; x++) {
+            if (!visited[y * width + x]) {
+                PixelType type = getPixelType(x, y);
+                switch (type) {
+                    case PixelType::SEWER:
+                        floodFill(x, y, PixelType::SEWER, sewerShape, visited);
+                        break;
+                    case PixelType::BASIN:
+                        floodFill(x, y, PixelType::BASIN, basinShape, visited);
+                        break;
+                    case PixelType::BASIN_GATE:
+                        floodFill(x, y, PixelType::BASIN_GATE, basinGateShape, visited);
+                        break;
+                    case PixelType::BASIN_OVERFLOW:
+                        floodFill(x, y, PixelType::BASIN_OVERFLOW, basinOverflowShape, visited);
+                        break;
+                    case PixelType::RIVER:
+                        floodFill(x, y, PixelType::RIVER, riverShape, visited);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+
+    DebugLogger::info("Shapes detected: Sewer(%d), Basin(%d), Basin Gate(%d), Basin Overflow(%d), River(%d)",
+                      sewerShape.size(), basinShape.size(), basinGateShape.size(), basinOverflowShape.size(), riverShape.size());
+}
+
+void Scene::floodFill(uint8_t startX, uint8_t startY, PixelType targetType, std::vector<Point>& shape, std::vector<bool>& visited) {
+    std::stack<Point> stack;
+    stack.push(Point(startX, startY));
+
+    while (!stack.empty()) {
+        Point p = stack.top();
+        stack.pop();
+
+        if (p.x >= width || p.y >= height || visited[p.y * width + p.x] || getPixelType(p.x, p.y) != targetType) {
+            continue;
+        }
+
+        shape.emplace_back(p.x, p.y);
+        visited[p.y * width + p.x] = true;
+
+        stack.push(Point(p.x + 1, p.y));
+        stack.push(Point(p.x - 1, p.y));
+        stack.push(Point(p.x, p.y + 1));
+        stack.push(Point(p.x, p.y - 1));
+    }
+}
+
+void Scene::updateOverflowState() {
+    isBasinOverflow = (basinLevel >= 1.0f);
 }
