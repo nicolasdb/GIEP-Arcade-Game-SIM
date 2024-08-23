@@ -106,12 +106,14 @@ void ButtonHandler::onBasinGateButtonPressed() {
     DebugLogger::info("Basin Gate Button pressed");
     digitalWrite(BASIN_GATE_LED_PIN, HIGH);
     _gameLogic.handleBasinGateButton(true);
+    DebugLogger::debug("Basin Gate LED turned ON");
 }
 
 void ButtonHandler::onBasinGateButtonReleased() {
     DebugLogger::info("Basin Gate Button released");
     digitalWrite(BASIN_GATE_LED_PIN, LOW);
     _gameLogic.handleBasinGateButton(false);
+    DebugLogger::debug("Basin Gate LED turned OFF");
 }
 
 void ButtonHandler::onDebugButtonPressed() {
