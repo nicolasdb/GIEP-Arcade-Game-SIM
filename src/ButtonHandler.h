@@ -1,31 +1,34 @@
-
 #pragma once
 #include <Arduino.h>
 #include "DebugLogger.h"
 #include "GameLogic.h"
+#include "MCP23017Handler.h"
 #include "config.h"
 
 class ButtonHandler {
 public:
     static const uint8_t DEBOUNCE_DELAY = 60; // milliseconds
 
-    ButtonHandler(const uint8_t* gamePins, uint8_t debugPin, GameLogic& gameLogic);
+    ButtonHandler(MCP23017Handler& mcpHandler, GameLogic& gameLogic);
     void update();
 
 private:
-    const uint8_t* _gamePins;
-    uint8_t _debugPin;
+    MCP23017Handler& _mcpHandler;
     GameLogic& _gameLogic;
-    uint8_t _lastGameStates[NUM_GAME_BUTTONS];
-    uint8_t _gameButtonStates[NUM_GAME_BUTTONS];
-    uint32_t _lastGameDebounceTime[NUM_GAME_BUTTONS];
+    uint8_t _lastMcpStates;
+    uint8_t _mcpButtonStates;
+    uint32_t _lastMcpDebounceTime[NUM_MCP_BUTTONS];
+    uint8_t _lastBasinGateState;
+    uint8_t _basinGateButtonState;
+    uint32_t _lastBasinGateDebounceTime;
     uint8_t _lastDebugState;
     uint8_t _debugButtonState;
     uint32_t _lastDebugDebounceTime;
 
-    void updateGameButtons(uint32_t now);
+    void updateMcpButtons(uint32_t now);
+    void updateBasinGateButton(uint32_t now);
     void updateDebugButton(uint32_t now);
-    void onGameButtonPressed(uint8_t button);
-    void onGameButtonReleased(uint8_t button);
+    void onButtonPressed(uint8_t button);
+    void onButtonReleased(uint8_t button);
     void onDebugButtonPressed();
 };

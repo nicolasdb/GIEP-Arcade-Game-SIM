@@ -4,12 +4,15 @@
 #define MATRIX_WIDTH 25
 #define MATRIX_HEIGHT 25
 #define NUM_LEDS (MATRIX_WIDTH * MATRIX_HEIGHT)
-#define BRIGHTNESS 100
 #define LED_TYPE WS2813
 #define COLOR_ORDER GRB
 
-// Button configuration
-#define NUM_GAME_BUTTONS 9
+// MCP23017 configuration
+#define MCP23017_ADDRESS 0x20
+#define NUM_MCP_BUTTONS 8
+#define TOTAL_BUTTONS 9
+#define BASIN_GATE_BUTTON_PIN 1
+#define BASIN_GATE_LED_PIN 3
 #define DEBUG_BUTTON_PIN 0
 
 // Game timing parameters (in milliseconds)
@@ -46,14 +49,17 @@
 // Color definitions
 #define COLOR_WHITE 0xFFFFFF
 #define COLOR_BLACK 0x000000
-#define COLOR_GREEN_1 0x05FF00
-#define COLOR_GREEN_2 0x0AFF00
-#define COLOR_GREEN_3 0x08FF00
-#define COLOR_GREEN_4 0x03FF00
-#define COLOR_GREEN_5 0x12FF00
-#define COLOR_GREEN_6 0x0DFF00
-#define COLOR_GREEN_7 0x0FFF00
-#define COLOR_GREEN_8 0x14FF00
+
+// GIEP Button colors, MCP GPIO connections for buttons (GPIOA) and LEDs (GPIOB)
+#define COLOR_GREEN_1 0x05FF00  // Button 1 - GPIOA 0, LED - GPIOB 0
+#define COLOR_GREEN_2 0x0AFF00  // Button 2 - GPIOA 1, LED - GPIOB 1
+#define COLOR_GREEN_3 0x08FF00  // Button 3 - GPIOA 2, LED - GPIOB 2
+#define COLOR_GREEN_4 0x03FF00  // Button 4 - GPIOA 3, LED - GPIOB 3
+#define COLOR_GREEN_5 0x12FF00  // Button 5 - GPIOA 4, LED - GPIOB 4
+#define COLOR_GREEN_6 0x0DFF00  // Button 6 - GPIOA 5, LED - GPIOB 5
+#define COLOR_GREEN_7 0x0FFF00  // Button 7 - GPIOA 6, LED - GPIOB 6
+#define COLOR_GREEN_8 0x14FF00  // Button 8 - GPIOA 7, LED - GPIOB 7
+
 #define COLOR_YELLOW 0xFFFF00
 #define COLOR_BLUE 0x0000FF
 
@@ -63,6 +69,8 @@
 #define SEWER_EMPTY_COLOR CRGB(16, 16, 0)  // Dim yellow
 #define BASIN_EMPTY_COLOR CRGB(0, 0, 16)   // Dim blue
 
+// Main brighness
+#define BRIGHTNESS 30
 // Specific brightness levels
 #define ACTIVE_BRIGHTNESS 16
 #define GIEP_ACTIVE_BRIGHTNESS 255
@@ -86,11 +94,3 @@
 
 // Watchdog configuration
 #define WDT_TIMEOUT 5  // 5 seconds
-
-
-
-// The smooth startup sequence gradually increases the LED brightness, which might help prevent the flash you're seeing. If you're still experiencing the flash, it could indeed be related to power delivery. 
-// You might want to consider:
-// Using a larger capacitor (e.g., 1000µF) + a ceramic 104
-// Adding a small resistor (e.g., 470 ohms) in series with the data line to the first LED.
-// Ensuring all ground connections are solid, including between the power supply, Arduino, and LED strip.
