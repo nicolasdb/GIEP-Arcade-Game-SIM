@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "Scene.h"
 #include "DebugLogger.h"
+#include "SecondaryLEDHandler.h"
 
 enum class GameState {
     IDLE,
@@ -15,7 +16,7 @@ enum class GameState {
 
 class GameLogic {
 public:
-    GameLogic(Scene& scene);
+    GameLogic(Scene& scene, SecondaryLEDHandler& secondaryLEDs);
     void update();
     void handleButton(uint8_t buttonIndex, bool isPressed);
     void handleBasinGateButton(bool isPressed);
@@ -25,6 +26,7 @@ public:
 
 private:
     Scene& scene;
+    SecondaryLEDHandler& secondaryLEDs;
     GameState currentState;
     unsigned long stateStartTime;
     float sewerLevel;
@@ -41,4 +43,5 @@ private:
     void resetGame(); 
     void updateWeatherCycle();  
     void handleGIEPButton(uint8_t buttonIndex, bool isPressed);
+    void updateSecondaryLEDs();
 };

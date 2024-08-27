@@ -10,19 +10,14 @@
 #include "config.h"
 #include "ButtonHandler.h"
 #include "MCP23017Handler.h"
+#include "SecondaryLEDHandler.h"
 #include "esp_task_wdt.h"
 
-#define LED_PIN     9
-#define BRIGHTNESS  30
-#define LED_TYPE    WS2812B
-#define COLOR_ORDER GRB
-
-#define NUM_LEDS (MATRIX_WIDTH * MATRIX_HEIGHT)
-
 CRGB leds[NUM_LEDS];
-MatrixConfig matrixConfig(MATRIX_WIDTH, MATRIX_HEIGHT, MatrixOrientation::BOTTOM_LEFT_HORIZONTAL, true);
+MatrixConfig matrixConfig(MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX_ORIENTATION, true);
 Scene scene(matrixConfig);
-GameLogic gameLogic(scene);
+SecondaryLEDHandler secondaryLEDs;
+GameLogic gameLogic(scene, secondaryLEDs);
 MCP23017Handler mcpHandler(MCP23017_ADDRESS);
 ButtonHandler buttonHandler(mcpHandler, gameLogic);
 
@@ -64,6 +59,7 @@ void ledUpdateTask(void* parameter) {
         scene.update();
         scene.draw(leds);
         FastLED.show();
+        secondaryLEDs.update();
         vTaskDelayUntil(&lastWakeTime, frequency);
     }
 }
@@ -96,6 +92,9 @@ void setup() {
     FastLED.show();
     
     DebugLogger::info("FastLED initialized");
+
+    secondaryLEDs.begin();
+    DebugLogger::info("Secondary LEDs initialized");
 
     StateTracker::setState(SystemState::MATRIX_READY);
     DebugLogger::info("Matrix ready. System state: %s", StateTracker::getCurrentStateString());
