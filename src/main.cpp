@@ -22,12 +22,19 @@ MCP23017Handler mcpHandler(MCP23017_ADDRESS);
 ButtonHandler buttonHandler(mcpHandler, gameLogic);
 
 void setupWatchdog() {
-    esp_task_wdt_init(WDT_TIMEOUT, true);  // Enable panic so ESP32 restarts
-    esp_task_wdt_add(NULL);  // Add current thread to WDT watch
+    esp_err_t err = esp_task_wdt_init(WDT_TIMEOUT, false);  // Disable panic so ESP32 doesn't restart
+    if (err != ESP_OK) {
+        DebugLogger::error("Failed to initialize watchdog timer: %d", err);
+        return;
+    }
+    DebugLogger::info("Watchdog timer initialized successfully");
 }
 
 void feedWatchdog() {
-    esp_task_wdt_reset();
+    esp_err_t err = esp_task_wdt_reset();
+    if (err != ESP_OK) {
+        DebugLogger::warn("Failed to feed watchdog timer: %d", err);
+    }
 }
 
 void buttonTask(void* parameter) {
@@ -36,17 +43,30 @@ void buttonTask(void* parameter) {
 
     while (true) {
         buttonHandler.update();
-        feedWatchdog();
         vTaskDelayUntil(&lastWakeTime, frequency);
     }
 }
 
 void gameUpdateTask(void* parameter) {
     TickType_t lastWakeTime = xTaskGetTickCount();
-    const TickType_t frequency = pdMS_TO_TICKS(100);  // Update every 100ms
+    const TickType_t frequency = pdMS_TO_TICKS(33);  // Update every ~30fps
 
     while (true) {
+        TickType_t startTime = xTaskGetTickCount();
+        
         gameLogic.update();
+        feedWatchdog();
+        
+        TickType_t endTime = xTaskGetTickCount();
+        TickType_t executionTime = endTime - startTime;
+        
+        DebugLogger::debug("gameUpdateTask execution time: %dms", pdTICKS_TO_MS(executionTime));
+        
+        if (executionTime > frequency) {
+            DebugLogger::warn("gameUpdateTask exceeded update frequency by %dms", 
+                              pdTICKS_TO_MS(executionTime - frequency));
+        }
+        
         vTaskDelayUntil(&lastWakeTime, frequency);
     }
 }
@@ -106,17 +126,25 @@ void setup() {
     DebugLogger::info("Setup complete. Final system state: %s", StateTracker::getCurrentStateString());
 
     setupWatchdog();
-    DebugLogger::info("Watchdog initialized");
 
-    xTaskCreatePinnedToCore(buttonTask, "ButtonTask", BUTTON_TASK_STACK_SIZE, NULL, TASK_PRIORITY, NULL, 0);
-    xTaskCreatePinnedToCore(gameUpdateTask, "GameUpdateTask", GAME_UPDATE_TASK_STACK_SIZE, NULL, TASK_PRIORITY, NULL, 1);
-    xTaskCreatePinnedToCore(ledUpdateTask, "LEDUpdateTask", LED_UPDATE_TASK_STACK_SIZE, NULL, TASK_PRIORITY, NULL, 1);
+    BaseType_t result;
+    result = xTaskCreatePinnedToCore(buttonTask, "ButtonTask", BUTTON_TASK_STACK_SIZE, NULL, BUTTON_TASK_PRIORITY, NULL, 0);
+    if (result != pdPASS) {
+        DebugLogger::error("Failed to create ButtonTask: %d", result);
+    }
+    result = xTaskCreatePinnedToCore(gameUpdateTask, "GameUpdateTask", GAME_UPDATE_TASK_STACK_SIZE, NULL, GAME_UPDATE_TASK_PRIORITY, NULL, 1);
+    if (result != pdPASS) {
+        DebugLogger::error("Failed to create GameUpdateTask: %d", result);
+    }
+    result = xTaskCreatePinnedToCore(ledUpdateTask, "LEDUpdateTask", LED_UPDATE_TASK_STACK_SIZE, NULL, LED_UPDATE_TASK_PRIORITY, NULL, 1);
+    if (result != pdPASS) {
+        DebugLogger::error("Failed to create LEDUpdateTask: %d", result);
+    }
 
     DebugLogger::info("FreeRTOS tasks created");
 }
 
 void loop() {
     // Empty, as tasks are handling everything
-    feedWatchdog();
-    vTaskDelay(pdMS_TO_TICKS(100));  // Small delay to prevent watchdog from triggering unnecessarily
+    vTaskDelay(pdMS_TO_TICKS(1000));  // Delay for 1 second
 }

@@ -1,4 +1,5 @@
 #include "MCP23017Handler.h"
+#include "config.h"
 
 MCP23017Handler::MCP23017Handler(uint8_t address) : _address(address) {}
 
@@ -7,8 +8,10 @@ void MCP23017Handler::begin() {
     // Set GPIOA to inputs with pull-ups for buttons
     writeRegister(IODIRA, 0xFF);
     writeRegister(GPPUA, 0xFF);
-    // Set GPIOB to outputs for LEDs
-    writeRegister(IODIRB, 0x00);
+    // Set GPIOB to outputs for LEDs if USE_BUTTON_LEDS is true
+    if (USE_BUTTON_LEDS) {
+        writeRegister(IODIRB, 0x00);
+    }
 }
 
 uint8_t MCP23017Handler::readButtons() {
@@ -16,7 +19,9 @@ uint8_t MCP23017Handler::readButtons() {
 }
 
 void MCP23017Handler::setLEDs(uint8_t ledStates) {
-    writeRegister(GPIOB, ledStates);
+    if (USE_BUTTON_LEDS) {
+        writeRegister(GPIOB, ledStates);
+    }
 }
 
 void MCP23017Handler::writeRegister(uint8_t reg, uint8_t value) {

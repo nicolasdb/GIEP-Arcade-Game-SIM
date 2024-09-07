@@ -1,5 +1,6 @@
 #include "GameLogic.h"
 #include "config.h"
+#include "DebugLogger.h"
 
 GameLogic::GameLogic(Scene& scene, SecondaryLEDHandler& secondaryLEDs) 
     : scene(scene), secondaryLEDs(secondaryLEDs), currentState(GameState::RAINING), 
@@ -18,6 +19,7 @@ void GameLogic::initializeGameState() {
 }
 
 void GameLogic::update() {
+    DebugLogger::debug("GameLogic::update() called");
     updateWeatherCycle();
     updateWaterLevels();
     updateRainIntensity();
@@ -25,9 +27,11 @@ void GameLogic::update() {
     handleBasinGate();
     checkForStateTransition();
     updateSecondaryLEDs();
+    DebugLogger::debug("GameLogic::update() completed");
 }
 
 void GameLogic::handleButton(uint8_t buttonIndex, bool isPressed) {
+    DebugLogger::debug("Button %d %s", buttonIndex, isPressed ? "pressed" : "released");
     if (buttonIndex < 8) {  // GIEP buttons
         handleGIEPButton(buttonIndex, isPressed);
     }
@@ -36,16 +40,30 @@ void GameLogic::handleButton(uint8_t buttonIndex, bool isPressed) {
 void GameLogic::handleGIEPButton(uint8_t buttonIndex, bool isPressed) {
     buttonStates[buttonIndex] = isPressed;
     scene.setGIEPState(buttonIndex, isPressed);
-    secondaryLEDs.setZoneState(static_cast<SecondaryLEDZone>(buttonIndex), isPressed);
+    
+    // Map button index to the correct SecondaryLEDZone
+    SecondaryLEDZone zone;
+    switch (buttonIndex) {
+        case 0: zone = SecondaryLEDZone::GIEP_1; break;
+        case 1: zone = SecondaryLEDZone::GIEP_2; break;
+        case 2: zone = SecondaryLEDZone::GIEP_3; break;
+        case 3: zone = SecondaryLEDZone::GIEP_4; break;
+        case 4: zone = SecondaryLEDZone::GIEP_5; break;
+        case 5: zone = SecondaryLEDZone::GIEP_6; break;
+        case 6: zone = SecondaryLEDZone::GIEP_7; break;
+        case 7: zone = SecondaryLEDZone::GIEP_8; break;
+        default: return; // Invalid button index
+    }
+    
+    secondaryLEDs.setZoneState(zone, isPressed);
     DebugLogger::info("GIEP Button %d %s", buttonIndex + 1, isPressed ? "pressed" : "released");
 }
 
 void GameLogic::handleBasinGateButton(bool isPressed) {
-    DebugLogger::info("handleBasinGateButton called with isPressed: %d", isPressed);
+    DebugLogger::info("Basin Gate Button %s", isPressed ? "pressed" : "released");
     basinGateOpen = isPressed;
     scene.setBasinGateState(isPressed);
     secondaryLEDs.setZoneState(SecondaryLEDZone::BASIN_GATE, isPressed);
-    DebugLogger::info("Basin Gate Button %s. basinGateOpen: %d", isPressed ? "pressed" : "released", basinGateOpen);
 }
 
 const char* GameLogic::getStateString() const {
@@ -69,6 +87,7 @@ void GameLogic::transitionState(GameState newState) {
 }
 
 void GameLogic::updateWeatherCycle() {
+    DebugLogger::debug("Updating weather cycle");
     unsigned long currentTime = millis();
     unsigned long stateDuration = currentTime - stateStartTime;
 
@@ -85,6 +104,8 @@ void GameLogic::updateWeatherCycle() {
 
 void GameLogic::updateWaterLevels() {
     float rainIntensity = scene.getRainIntensity();
+    float previousSewerLevel = sewerLevel;
+    float previousBasinLevel = basinLevel;
     
     // Calculate GIEP effect
     float giepEffect = 0;
@@ -102,13 +123,20 @@ void GameLogic::updateWaterLevels() {
     }
     sewerLevel = max(0.0f, min(sewerLevel, SEWER_OVERFLOW_THRESHOLD));
 
+    // Update basin level (assuming basin gate logic is implemented elsewhere)
+    // ... (implement basin level update logic here)
+
     scene.setSewerLevel(sewerLevel);
     scene.setBasinLevel(basinLevel);
 
-    DebugLogger::info("Sewer Level: %.2f, Basin Level: %.2f", sewerLevel, basinLevel);
+    DebugLogger::info("Water Levels - Sewer: %.2f (Δ%.4f), Basin: %.2f (Δ%.4f), Rain: %.4f, GIEP: %.4f", 
+                      sewerLevel, sewerLevel - previousSewerLevel, 
+                      basinLevel, basinLevel - previousBasinLevel,
+                      rainIntensity, giepEffect);
 }
 
 void GameLogic::updateRainIntensity() {
+    DebugLogger::debug("Updating rain intensity");
     float intensity;
     uint8_t rainLevel = 0;
     switch (currentState) {
@@ -138,19 +166,33 @@ void GameLogic::updateRainIntensity() {
     }
     scene.setRainIntensity(intensity);
     secondaryLEDs.setRainLevel(rainLevel);
+    DebugLogger::info("Rain intensity set to %.2f, Rain level: %d", intensity, rainLevel);
 }
 
 void GameLogic::handleGIEPEffects() {
+    DebugLogger::debug("Handling GIEP effects");
     // Implement GIEP effects based on button states
     // For now, we're just updating the GIEP states in the Scene and SecondaryLEDs
     for (int i = 0; i < 8; i++) {
         scene.setGIEPState(i, buttonStates[i]);
-        secondaryLEDs.setZoneState(static_cast<SecondaryLEDZone>(i), buttonStates[i]);
+        SecondaryLEDZone zone;
+        switch (i) {
+            case 0: zone = SecondaryLEDZone::GIEP_1; break;
+            case 1: zone = SecondaryLEDZone::GIEP_2; break;
+            case 2: zone = SecondaryLEDZone::GIEP_3; break;
+            case 3: zone = SecondaryLEDZone::GIEP_4; break;
+            case 4: zone = SecondaryLEDZone::GIEP_5; break;
+            case 5: zone = SecondaryLEDZone::GIEP_6; break;
+            case 6: zone = SecondaryLEDZone::GIEP_7; break;
+            case 7: zone = SecondaryLEDZone::GIEP_8; break;
+            default: continue; // Skip invalid indices
+        }
+        secondaryLEDs.setZoneState(zone, buttonStates[i]);
     }
 }
 
 void GameLogic::handleBasinGate() {
-    DebugLogger::debug("handleBasinGate called. basinGateOpen: %d", basinGateOpen);
+    DebugLogger::debug("Handling basin gate");
     if (basinGateOpen) {
         float transferAmount = min(BASIN_GATE_TRANSFER_RATE * sewerLevel, BASIN_OVERFLOW_THRESHOLD - basinLevel);
         sewerLevel -= transferAmount;
@@ -165,6 +207,7 @@ void GameLogic::handleBasinGate() {
 }
 
 void GameLogic::checkForStateTransition() {
+    DebugLogger::debug("Checking for state transition");
     unsigned long currentTime = millis();
     unsigned long stateDuration = currentTime - stateStartTime;
 
@@ -214,7 +257,19 @@ void GameLogic::resetGame() {
     for (int i = 0; i < 8; i++) {
         buttonStates[i] = false;
         scene.setGIEPState(i, false);
-        secondaryLEDs.setZoneState(static_cast<SecondaryLEDZone>(i), false);
+        SecondaryLEDZone zone;
+        switch (i) {
+            case 0: zone = SecondaryLEDZone::GIEP_1; break;
+            case 1: zone = SecondaryLEDZone::GIEP_2; break;
+            case 2: zone = SecondaryLEDZone::GIEP_3; break;
+            case 3: zone = SecondaryLEDZone::GIEP_4; break;
+            case 4: zone = SecondaryLEDZone::GIEP_5; break;
+            case 5: zone = SecondaryLEDZone::GIEP_6; break;
+            case 6: zone = SecondaryLEDZone::GIEP_7; break;
+            case 7: zone = SecondaryLEDZone::GIEP_8; break;
+            default: continue; // Skip invalid indices
+        }
+        secondaryLEDs.setZoneState(zone, false);
     }
     basinGateOpen = false;
     scene.setBasinGateState(false);
@@ -223,6 +278,7 @@ void GameLogic::resetGame() {
 }
 
 void GameLogic::updateSecondaryLEDs() {
+    DebugLogger::debug("Updating secondary LEDs");
     switch (currentState) {
         case GameState::FLOOD:
             secondaryLEDs.setEndGameState(SecondaryLEDZone::FLOOD_DEATH);

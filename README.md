@@ -9,6 +9,8 @@ This project is a simulation of an arcade game for GIEP (Green Infrastructure an
 - Interactive buttons for controlling GIEP devices
 - Simulation of different rainfall intensities and water levels
 - Game states including win and loss conditions
+- Enhanced debugging capabilities
+- Improved error handling and watchdog implementation
 
 ## Hardware Components
 
@@ -29,6 +31,8 @@ This project is a simulation of an arcade game for GIEP (Green Infrastructure an
 - `MatrixConfig`: Configures the LED matrix layout
 - `StateTracker`: Tracks the overall system state
 - `DebugLogger`: Provides logging functionality for debugging
+- `config.h`: Contains hardware-specific configurations
+- `game_config.h`: Contains game-specific configurations for easy adjustment
 
 ## Game Mechanics
 
@@ -53,6 +57,23 @@ The secondary LED array provides additional visual feedback:
 2. Clone this repository.
 3. Open the project in PlatformIO.
 4. Build and upload the project to your ESP32 board.
+
+## Debugging
+
+The project now includes enhanced debugging capabilities:
+- Use the `DebugLogger` class to log messages at different levels (ERROR, WARN, INFO, DEBUG).
+- Debug logs can be enabled or disabled using the DEBUG flag in the build configuration.
+- The `config.h` file includes a DEBUG_PRINT macro for conditional debug output.
+
+## Configuration
+
+- Hardware-specific configurations are located in `config.h`.
+- Game-specific parameters (e.g., timing, water levels, rain intensities) are now separated into `game_config.h` for easier adjustment.
+
+## Failsafe Mechanisms
+
+- Watchdog timer implementation to detect and recover from system hangs.
+- Improved error handling in task creation and hardware initialization.
 
 ## Contributing
 

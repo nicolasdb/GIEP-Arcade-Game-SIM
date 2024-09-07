@@ -1,5 +1,13 @@
 #pragma once
 #include <FastLED.h>
+#include "game_config.h"
+
+// Debug configuration
+#ifdef DEBUG
+#define DEBUG_PRINT(x) Serial.println(x)
+#else
+#define DEBUG_PRINT(x)
+#endif
 
 // Hardware configuration
 #define LED_PIN 9
@@ -18,25 +26,37 @@
 #define BASIN_GATE_LED_PIN 3
 #define DEBUG_BUTTON_PIN 0
 
-// Game timing parameters (in milliseconds)
-#define IDLE_DURATION 30000
-#define RAINING_DURATION 30000
-#define HEAVY_DURATION 40000
-#define STORM_DURATION 40000
-#define END_STATE_DURATION 10000
+// Global switch for button LEDs
+#define USE_BUTTON_LEDS false
 
-// Rain intensity parameters
-#define RAIN_INTENSITY_IDLE 0.0f
-#define RAIN_INTENSITY_RAINING 0.001f
-#define RAIN_INTENSITY_HEAVY 0.002f
-#define RAIN_INTENSITY_STORM 0.003f
+// Watchdog configuration
+#define WDT_TIMEOUT 15  // 15 seconds
 
-// GIEP effect parameters
-#define GIEP_EFFECT_STRENGTH 0.05f
-
-// Water level parameters
-#define SEWER_DRAIN_RATE 0.0002f
-#define BASIN_GATE_TRANSFER_RATE 0.1f
+// Consolidated color definitions
+enum ZoneColors {
+    COLOR_WHITE = 0xFFFFFF,
+    COLOR_BLACK = 0x000000,
+    COLOR_GREEN_1 = 0x00FF00,
+    COLOR_GREEN_2 = 0x00E300,
+    COLOR_GREEN_3 = 0x00C700,
+    COLOR_GREEN_4 = 0x00AB00,
+    COLOR_GREEN_5 = 0x008F00,
+    COLOR_GREEN_6 = 0x007300,
+    COLOR_GREEN_7 = 0x005700,
+    COLOR_GREEN_8 = 0x003200,
+    COLOR_YELLOW = 0xFFFF00,
+    COLOR_BLUE = 0x0000FF,
+    COLOR_RED = 0xFF0000,
+    COLOR_MAGENTA = 0xFF00FF,
+    COLOR_PURPLE = 0x6400FF,
+    COLOR_DARK_BLUE = 0x0000E3,  // Used for Rain Level 1
+    COLOR_MEDIUM_BLUE = 0x0000C7,  // Used for Rain Level 2
+    COLOR_LIGHT_BLUE = 0x0000AB,  // Used for Rain Level 3
+    COLOR_DARK_RED = 0xC70000,  // Used for Flood Death
+    COLOR_MEDIUM_RED = 0xAB0000,  // Used for Pollution Death
+    COLOR_CYAN = 0x00FFFF,  // Used for Win condition
+    COLOR_ORANGE = 0xFFA500  // Used in SECONDARY_LED_BITMAP
+};
 
 // Default bitmap for the scene
 const uint32_t DEFAULT_BITMAP[625] = {
@@ -65,27 +85,25 @@ const uint32_t DEFAULT_BITMAP[625] = {
     0x000000, 0x000000, 0x000000, 0xFFFF00, 0xFFFF00, 0xFFFF00, 0x000000, 0x000000, 0x000000, 0x000000, 0x0000FF, 0x0000FF, 0x0000FF, 0x0000FF, 0x0000FF, 0x0000FF, 0x000000, 0x000000, 0x000000, 0x6400FF, 0x6400FF, 0x6400FF, 0x6400FF, 0x6400FF, 0x000000, 
     0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x0000FF, 0x0000FF, 0x0000FF, 0x0000FF, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x6400FF, 0x6400FF, 0x6400FF, 0x000000, 0x000000, 
     0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000
-    };
+};
         
-// Color definitions
-#define COLOR_WHITE 0xFFFFFF
-#define COLOR_BLACK 0x000000
-
-// Updated GIEP Button colors, MCP GPIO connections for buttons (GPIOA) and LEDs (GPIOB)
-#define COLOR_GREEN_1 0x00FF00  // Button 1 - GPIOA 0, LED - GPIOB 0
-#define COLOR_GREEN_2 0x00E300  // Button 2 - GPIOA 1, LED - GPIOB 1
-#define COLOR_GREEN_3 0x00C700  // Button 3 - GPIOA 2, LED - GPIOB 2
-#define COLOR_GREEN_4 0x00AB00  // Button 4 - GPIOA 3, LED - GPIOB 3
-#define COLOR_GREEN_5 0x008F00  // Button 5 - GPIOA 4, LED - GPIOB 4
-#define COLOR_GREEN_6 0x007300  // Button 6 - GPIOA 5, LED - GPIOB 5
-#define COLOR_GREEN_7 0x005700  // Button 7 - GPIOA 6, LED - GPIOB 6
-#define COLOR_GREEN_8 0x003200  // Button 8 - GPIOA 7, LED - GPIOB 7
-
-#define COLOR_YELLOW 0xFFFF00
-#define COLOR_BLUE 0x0000FF
-#define COLOR_RED 0xFF0000  // for bassin_gate
-#define COLOR_MAGENTA 0xFF00FF
-#define COLOR_PURPLE 0x6400FF  // for the river
+// Secondary LED bitmap (4x15 pixels)
+// Each uint32_t represents a column of 4 LEDs for a zone
+const uint32_t SECONDARY_LED_BITMAP[60] = {
+    0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00,
+    0x00E300, 0x00E300, 0x00E300, 0x00E300,
+    0x00C700, 0x00C700, 0x00C700, 0x00C700,
+    0x00AB00, 0x00AB00, 0x00AB00, 0x00AB00,
+    0xFF0000, 0xFF0000, 0xFF0000, 0xFF0000,
+    0x003200, 0x003200, 0x003200, 0x003200,
+    0x005700, 0x005700, 0x005700, 0x005700,
+    0x007300, 0x007300, 0x007300, 0x007300,
+    0x00FFFF, 0x00FFFF, 0x00FFFF, 0x00FFFF,     
+    0xC70000, 0xC70000, 0xAB0000, 0xAB0000,     
+    0x0000AB, 0x0000AB, 0x0000AB, 0x0000AB,   
+    0x0000C7, 0x0000C7, 0x0000C7, 0x0000C7,    
+    0x0000E3, 0x0000E3, 0x0000E3, 0x0000E3  
+};
 
 // LED colors
 #define SEWER_COLOR CRGB::Yellow
@@ -96,36 +114,68 @@ const uint32_t DEFAULT_BITMAP[625] = {
 #define BASIN_OVERFLOW_COLOR CRGB::Green
 #define RIVER_COLOR CRGB(100, 0, 255)  // Purple color for the river
 
-// Brightness levels
-#define BRIGHTNESS 30
-#define ACTIVE_BRIGHTNESS 16
-#define GIEP_ACTIVE_BRIGHTNESS 255
-#define GIEP_INACTIVE_BRIGHTNESS 40
-#define RAIN_BRIGHTNESS 128
-#define SEWER_BRIGHTNESS 255
-#define SEWER_EMPTY_BRIGHTNESS 16
-#define BASIN_BRIGHTNESS 255
-#define BASIN_EMPTY_BRIGHTNESS 16
-#define BASIN_GATE_BRIGHTNESS 255
-#define BASIN_GATE_INACTIVE_BRIGHTNESS 40
-#define BASIN_OVERFLOW_BRIGHTNESS 255
-#define RIVER_BRIGHTNESS 255
-
-// Game balance parameters
-#define SEWER_OVERFLOW_THRESHOLD 1.0f
-#define BASIN_OVERFLOW_THRESHOLD 1.0f
-
 // Task configuration
 #define BUTTON_TASK_STACK_SIZE 2048
 #define GAME_UPDATE_TASK_STACK_SIZE 4096
 #define LED_UPDATE_TASK_STACK_SIZE 2048
-#define TASK_PRIORITY 1
-
-// Watchdog configuration
-#define WDT_TIMEOUT 5  // 5 seconds
+#define BUTTON_TASK_PRIORITY 3
+#define GAME_UPDATE_TASK_PRIORITY 2
+#define LED_UPDATE_TASK_PRIORITY 1
 
 // Secondary LED configuration
 #define SECONDARY_LED_PIN 7
-#define SECONDARY_NUM_ZONES 14
+#define SECONDARY_NUM_ZONES 15
 #define LEDS_PER_ZONE 4
 #define TOTAL_SECONDARY_LEDS (SECONDARY_NUM_ZONES * LEDS_PER_ZONE)
+
+// Secondary LED zone indices
+#define GIEP_1_ZONE 0
+#define GIEP_2_ZONE 1
+#define GIEP_3_ZONE 2
+#define GIEP_4_ZONE 3
+#define GIEP_5_ZONE 4
+#define GIEP_6_ZONE 5
+#define GIEP_7_ZONE 6
+#define GIEP_8_ZONE 7
+#define BASIN_GATE_ZONE 8
+#define RAIN_LEVEL_1_ZONE 9
+#define RAIN_LEVEL_2_ZONE 10
+#define RAIN_LEVEL_3_ZONE 11
+#define FLOOD_DEATH_ZONE 12
+#define POLLUTION_DEATH_ZONE 13
+#define WIN_ZONE 14
+
+// Helper function to get LED color for a specific zone and LED index
+#define GET_SECONDARY_LED_COLOR(zone, led_index) ((SECONDARY_LED_BITMAP[zone * 4 + led_index]))
+
+// Function to initialize the watchdog timer
+void initWatchdog();
+
+// Function to get the color name from the color value
+inline const char* getColorName(uint32_t color) {
+    switch (color) {
+        case COLOR_WHITE: return "WHITE";
+        case COLOR_BLACK: return "BLACK";
+        case COLOR_GREEN_1: return "GREEN_1";
+        case COLOR_GREEN_2: return "GREEN_2";
+        case COLOR_GREEN_3: return "GREEN_3";
+        case COLOR_GREEN_4: return "GREEN_4";
+        case COLOR_GREEN_5: return "GREEN_5";
+        case COLOR_GREEN_6: return "GREEN_6";
+        case COLOR_GREEN_7: return "GREEN_7";
+        case COLOR_GREEN_8: return "GREEN_8";
+        case COLOR_YELLOW: return "YELLOW";
+        case COLOR_BLUE: return "BLUE";
+        case COLOR_RED: return "RED";
+        case COLOR_MAGENTA: return "MAGENTA";
+        case COLOR_PURPLE: return "PURPLE";
+        case COLOR_DARK_BLUE: return "DARK_BLUE";
+        case COLOR_MEDIUM_BLUE: return "MEDIUM_BLUE";
+        case COLOR_LIGHT_BLUE: return "LIGHT_BLUE";
+        case COLOR_DARK_RED: return "DARK_RED";
+        case COLOR_MEDIUM_RED: return "MEDIUM_RED";
+        case COLOR_CYAN: return "CYAN";
+        case COLOR_ORANGE: return "ORANGE";
+        default: return "UNKNOWN";
+    }
+}
