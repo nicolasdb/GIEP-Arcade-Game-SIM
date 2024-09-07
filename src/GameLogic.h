@@ -5,7 +5,8 @@
 #include "SecondaryLEDHandler.h"
 
 enum class GameState {
-    IDLE,
+    WAITING_RAINING,
+    WAITING_DRY,
     RAINING,
     HEAVY,
     STORM,
@@ -33,6 +34,7 @@ private:
     float basinLevel;
     bool buttonStates[8];  // For 8 GIEP buttons
     bool basinGateOpen;
+    bool gameActive;
 
     void transitionState(GameState newState);
     void updateWaterLevels();
@@ -44,4 +46,8 @@ private:
     void updateWeatherCycle();  
     void handleGIEPButton(uint8_t buttonIndex, bool isPressed);
     void updateSecondaryLEDs();
+    void updateWaitingMode();
+    void updateActiveGame();
+    void startGame();
+    void endGame(GameState endState);
 };

@@ -3,38 +3,72 @@
 #include "DebugLogger.h"
 
 GameLogic::GameLogic(Scene& scene, SecondaryLEDHandler& secondaryLEDs) 
-    : scene(scene), secondaryLEDs(secondaryLEDs), currentState(GameState::RAINING), 
-    stateStartTime(0), sewerLevel(0), basinLevel(0), basinGateOpen(false) {
+    : scene(scene), secondaryLEDs(secondaryLEDs), currentState(GameState::WAITING_RAINING), 
+    stateStartTime(0), sewerLevel(0), basinLevel(0), basinGateOpen(false), gameActive(false) {
     memset(buttonStates, 0, sizeof(buttonStates));
     initializeGameState();
 }
 
 void GameLogic::initializeGameState() {
-    currentState = GameState::RAINING;
+    currentState = GameState::WAITING_RAINING;
     stateStartTime = millis();
     scene.setRainVisible(true);
     scene.setRainIntensity(RAIN_INTENSITY_RAINING);
     updateSecondaryLEDs();
-    DebugLogger::info("Game initialized with RAINING state");
+    DebugLogger::info("Game initialized with WAITING_RAINING state");
 }
 
 void GameLogic::update() {
     DebugLogger::debug("GameLogic::update() called");
+    if (gameActive) {
+        updateActiveGame();
+    } else {
+        updateWaitingMode();
+    }
+    updateSecondaryLEDs();
+    DebugLogger::debug("GameLogic::update() completed");
+}
+
+void GameLogic::updateActiveGame() {
     updateWeatherCycle();
     updateWaterLevels();
     updateRainIntensity();
     handleGIEPEffects();
     handleBasinGate();
     checkForStateTransition();
-    updateSecondaryLEDs();
-    DebugLogger::debug("GameLogic::update() completed");
+}
+
+void GameLogic::updateWaitingMode() {
+    unsigned long currentTime = millis();
+    unsigned long stateDuration = currentTime - stateStartTime;
+
+    if (currentState == GameState::WAITING_RAINING && stateDuration >= WAITING_RAINING_DURATION) {
+        transitionState(GameState::WAITING_DRY);
+        scene.setRainVisible(false);
+    } else if (currentState == GameState::WAITING_DRY && stateDuration >= WAITING_DRY_DURATION) {
+        transitionState(GameState::WAITING_RAINING);
+        scene.setRainVisible(true);
+    }
 }
 
 void GameLogic::handleButton(uint8_t buttonIndex, bool isPressed) {
     DebugLogger::debug("Button %d %s", buttonIndex, isPressed ? "pressed" : "released");
+    if (!gameActive && isPressed) {
+        startGame();
+        return;
+    }
     if (buttonIndex < 8) {  // GIEP buttons
         handleGIEPButton(buttonIndex, isPressed);
     }
+}
+
+void GameLogic::startGame() {
+    gameActive = true;
+    currentState = GameState::RAINING;
+    stateStartTime = millis();
+    scene.setRainVisible(true);
+    scene.setRainIntensity(RAIN_INTENSITY_RAINING);
+    DebugLogger::info("Game started, entering RAINING state");
 }
 
 void GameLogic::handleGIEPButton(uint8_t buttonIndex, bool isPressed) {
@@ -68,7 +102,8 @@ void GameLogic::handleBasinGateButton(bool isPressed) {
 
 const char* GameLogic::getStateString() const {
     switch (currentState) {
-        case GameState::IDLE: return "IDLE";
+        case GameState::WAITING_RAINING: return "WAITING_RAINING";
+        case GameState::WAITING_DRY: return "WAITING_DRY";
         case GameState::RAINING: return "RAINING";
         case GameState::HEAVY: return "HEAVY";
         case GameState::STORM: return "STORM";
@@ -92,13 +127,14 @@ void GameLogic::updateWeatherCycle() {
     unsigned long stateDuration = currentTime - stateStartTime;
 
     if (currentState == GameState::RAINING && stateDuration >= RAINING_DURATION) {
-        transitionState(GameState::IDLE);
-        scene.setRainVisible(false);
-        DebugLogger::info("Weather changed to IDLE");
-    } else if (currentState == GameState::IDLE && stateDuration >= IDLE_DURATION) {
         transitionState(GameState::HEAVY);
-        scene.setRainVisible(true);
         DebugLogger::info("Weather changed to HEAVY");
+    } else if (currentState == GameState::HEAVY && stateDuration >= HEAVY_DURATION) {
+        transitionState(GameState::STORM);
+        DebugLogger::info("Weather changed to STORM");
+    } else if (currentState == GameState::STORM && stateDuration >= STORM_DURATION) {
+        transitionState(GameState::RAINING);
+        DebugLogger::info("Weather cycled back to RAINING");
     }
 }
 
@@ -140,10 +176,11 @@ void GameLogic::updateRainIntensity() {
     float intensity;
     uint8_t rainLevel = 0;
     switch (currentState) {
-        case GameState::IDLE:
-            intensity = RAIN_INTENSITY_IDLE;
+        case GameState::WAITING_DRY:
+            intensity = 0.0f;
             scene.setRainVisible(false);
             break;
+        case GameState::WAITING_RAINING:
         case GameState::RAINING:
             intensity = RAIN_INTENSITY_RAINING;
             scene.setRainVisible(true);
@@ -208,48 +245,24 @@ void GameLogic::handleBasinGate() {
 
 void GameLogic::checkForStateTransition() {
     DebugLogger::debug("Checking for state transition");
-    unsigned long currentTime = millis();
-    unsigned long stateDuration = currentTime - stateStartTime;
-
-    switch (currentState) {
-        case GameState::RAINING:
-            if (stateDuration >= RAINING_DURATION) {
-                transitionState(GameState::IDLE);
-            }
-            break;
-        case GameState::IDLE:
-            if (stateDuration >= IDLE_DURATION) {
-                transitionState(GameState::HEAVY);
-            }
-            break;
-        case GameState::HEAVY:
-            if (stateDuration >= HEAVY_DURATION) {
-                transitionState(GameState::STORM);
-            }
-            break;
-        case GameState::STORM:
-            if (stateDuration >= STORM_DURATION) {
-                transitionState(GameState::WIN);
-            }
-            break;
-        case GameState::FLOOD:
-        case GameState::CANAL:
-        case GameState::WIN:
-            if (stateDuration >= END_STATE_DURATION) {
-                resetGame();
-            }
-            break;
-    }
-
-    if (sewerLevel >= SEWER_OVERFLOW_THRESHOLD && currentState != GameState::FLOOD && currentState != GameState::CANAL && currentState != GameState::WIN) {
-        transitionState(GameState::FLOOD);
-    } else if (basinLevel >= BASIN_OVERFLOW_THRESHOLD && currentState != GameState::FLOOD && currentState != GameState::CANAL && currentState != GameState::WIN) {
-        transitionState(GameState::CANAL);
+    if (sewerLevel >= SEWER_OVERFLOW_THRESHOLD) {
+        endGame(GameState::FLOOD);
+    } else if (basinLevel >= BASIN_OVERFLOW_THRESHOLD) {
+        endGame(GameState::CANAL);
+    } else if (currentState == GameState::STORM && sewerLevel <= WIN_THRESHOLD && basinLevel <= WIN_THRESHOLD) {
+        endGame(GameState::WIN);
     }
 }
 
+void GameLogic::endGame(GameState endState) {
+    gameActive = false;
+    transitionState(endState);
+    DebugLogger::info("Game ended with state: %s", getStateString());
+}
+
 void GameLogic::resetGame() {
-    DebugLogger::info("Resetting game to RAINING state");
+    DebugLogger::info("Resetting game to WAITING_RAINING state");
+    gameActive = false;
     sewerLevel = 0;
     basinLevel = 0;
     scene.setSewerLevel(sewerLevel);
@@ -281,16 +294,48 @@ void GameLogic::updateSecondaryLEDs() {
     DebugLogger::debug("Updating secondary LEDs");
     switch (currentState) {
         case GameState::FLOOD:
-            secondaryLEDs.setEndGameState(SecondaryLEDZone::FLOOD_DEATH);
+            secondaryLEDs.setZoneState(SecondaryLEDZone::FLOOD_DEATH, true);
             break;
         case GameState::CANAL:
-            secondaryLEDs.setEndGameState(SecondaryLEDZone::POLLUTION_DEATH);
+            secondaryLEDs.setZoneState(SecondaryLEDZone::POLLUTION_DEATH, true);
             break;
         case GameState::WIN:
-            secondaryLEDs.setEndGameState(SecondaryLEDZone::WIN);
+            for (int i = 0; i < 8; i++) {
+                SecondaryLEDZone zone;
+                switch (i) {
+                    case 0: zone = SecondaryLEDZone::GIEP_1; break;
+                    case 1: zone = SecondaryLEDZone::GIEP_2; break;
+                    case 2: zone = SecondaryLEDZone::GIEP_3; break;
+                    case 3: zone = SecondaryLEDZone::GIEP_4; break;
+                    case 4: zone = SecondaryLEDZone::GIEP_5; break;
+                    case 5: zone = SecondaryLEDZone::GIEP_6; break;
+                    case 6: zone = SecondaryLEDZone::GIEP_7; break;
+                    case 7: zone = SecondaryLEDZone::GIEP_8; break;
+                    default: continue;
+                }
+                secondaryLEDs.setZoneState(zone, true);
+            }
             break;
         default:
-            secondaryLEDs.setEndGameState(SecondaryLEDZone::GIEP_1); // Reset end game state
+            // Reset all zones to their default state
+            for (int i = 0; i < 8; i++) {
+                SecondaryLEDZone zone;
+                switch (i) {
+                    case 0: zone = SecondaryLEDZone::GIEP_1; break;
+                    case 1: zone = SecondaryLEDZone::GIEP_2; break;
+                    case 2: zone = SecondaryLEDZone::GIEP_3; break;
+                    case 3: zone = SecondaryLEDZone::GIEP_4; break;
+                    case 4: zone = SecondaryLEDZone::GIEP_5; break;
+                    case 5: zone = SecondaryLEDZone::GIEP_6; break;
+                    case 6: zone = SecondaryLEDZone::GIEP_7; break;
+                    case 7: zone = SecondaryLEDZone::GIEP_8; break;
+                    default: continue;
+                }
+                secondaryLEDs.setZoneState(zone, buttonStates[i]);
+            }
+            secondaryLEDs.setZoneState(SecondaryLEDZone::BASIN_GATE, basinGateOpen);
+            secondaryLEDs.setZoneState(SecondaryLEDZone::FLOOD_DEATH, false);
+            secondaryLEDs.setZoneState(SecondaryLEDZone::POLLUTION_DEATH, false);
             break;
     }
 }

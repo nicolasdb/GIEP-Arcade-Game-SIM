@@ -49,13 +49,12 @@ enum ZoneColors {
     COLOR_RED = 0xFF0000,
     COLOR_MAGENTA = 0xFF00FF,
     COLOR_PURPLE = 0x6400FF,
-    COLOR_DARK_BLUE = 0x0000E3,  // Used for Rain Level 1
-    COLOR_MEDIUM_BLUE = 0x0000C7,  // Used for Rain Level 2
-    COLOR_LIGHT_BLUE = 0x0000AB,  // Used for Rain Level 3
-    COLOR_DARK_RED = 0xC70000,  // Used for Flood Death
-    COLOR_MEDIUM_RED = 0xAB0000,  // Used for Pollution Death
-    COLOR_CYAN = 0x00FFFF,  // Used for Win condition
-    COLOR_ORANGE = 0xFFA500  // Used in SECONDARY_LED_BITMAP
+    COLOR_DARK_BLUE = 0x0000E3,     // Used for Rain Level 1
+    COLOR_MEDIUM_BLUE = 0x0000C7,   // Used for Rain Level 2
+    COLOR_LIGHT_BLUE = 0x0000AB,    // Used for Rain Level 3
+    COLOR_DARK_RED = 0xC70000,      // Used for Flood Death
+    COLOR_MEDIUM_RED = 0xAB0000,    // Used for Pollution Death
+    COLOR_CYAN = 0x00FFFF,          // Used for Win condition
 };
 
 // Default bitmap for the scene
@@ -175,7 +174,6 @@ inline const char* getColorName(uint32_t color) {
         case COLOR_DARK_RED: return "DARK_RED";
         case COLOR_MEDIUM_RED: return "MEDIUM_RED";
         case COLOR_CYAN: return "CYAN";
-        case COLOR_ORANGE: return "ORANGE";
         default: return "UNKNOWN";
     }
 }
