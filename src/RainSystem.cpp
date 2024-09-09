@@ -1,4 +1,5 @@
 #include "RainSystem.h"
+#include "ConfigLoader.h"
 #include <algorithm>
 
 RainSystem::RainSystem(const MatrixConfig& config)
@@ -32,16 +33,16 @@ void RainSystem::update(const bool* buildingMap) {
 
     float dropChance = intensity;
     int8_t windOffset = 0;
-    uint8_t maxTrailLength = RAIN_MAX_TRAIL_LENGTH;
+    uint8_t maxTrailLength = ConfigLoader::RAIN_MAX_TRAIL_LENGTH();
 
     switch (mode) {
         case RainMode::HEAVY:
-            dropChance *= RAIN_HEAVY_MULTIPLIER;
-            maxTrailLength = RAIN_MAX_TRAIL_LENGTH * 2;
+            dropChance *= ConfigLoader::RAIN_HEAVY_MULTIPLIER();
+            maxTrailLength = ConfigLoader::RAIN_MAX_TRAIL_LENGTH() * 2;
             break;
         case RainMode::STORM:
-            dropChance *= RAIN_STORM_MULTIPLIER;
-            maxTrailLength = RAIN_MAX_TRAIL_LENGTH * 3;
+            dropChance *= ConfigLoader::RAIN_STORM_MULTIPLIER();
+            maxTrailLength = ConfigLoader::RAIN_MAX_TRAIL_LENGTH() * 3;
             windOffset = random8(3) - 1; // -1, 0, or 1
             break;
         default:
@@ -58,7 +59,7 @@ void RainSystem::update(const bool* buildingMap) {
                 rainDrops[x].y++;
                 rainDrops[x].trailLength = std::min<uint8_t>(rainDrops[x].trailLength + 1, maxTrailLength);
 
-                if (mode == RainMode::STORM && random8() < RAIN_STORM_WIND_CHANCE) {
+                if (mode == RainMode::STORM && random8() < ConfigLoader::RAIN_STORM_WIND_CHANCE()) {
                     int8_t newX = (x + windOffset + width) % width;
                     if (rainDrops[newX].y >= height) {
                         std::swap(rainDrops[x], rainDrops[newX]);
@@ -76,13 +77,13 @@ void RainSystem::update(const bool* buildingMap) {
 void RainSystem::draw(CRGB* leds) const {
     if (!isVisible) return;
 
-    uint8_t rainBrightness = RAIN_BRIGHTNESS;
+    uint8_t rainBrightness = ConfigLoader::RAIN_BRIGHTNESS();
     switch (mode) {
         case RainMode::HEAVY:
-            rainBrightness = RAIN_BRIGHTNESS * 1.5;
+            rainBrightness = ConfigLoader::RAIN_BRIGHTNESS() * 1.5;
             break;
         case RainMode::STORM:
-            rainBrightness = RAIN_BRIGHTNESS * 2;
+            rainBrightness = ConfigLoader::RAIN_BRIGHTNESS() * 2;
             break;
         default:
             break;

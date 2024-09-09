@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include "DebugLogger.h"
+#include "BitmapConfig.h"
 
 enum class MatrixOrientation {
     TOP_LEFT_HORIZONTAL,
@@ -22,6 +23,9 @@ public:
     
     uint16_t XY(uint8_t x, uint8_t y) const;
     void validate() const;
+
+    CRGB getLEDColor(uint16_t index) const;
+    bool loadBitmap(const char* filename);
 
 private:
     uint8_t width;

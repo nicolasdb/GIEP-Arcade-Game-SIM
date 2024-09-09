@@ -84,3 +84,11 @@ const char* MatrixConfig::orientationToString(MatrixOrientation o) {
         default: return "UNKNOWN";
     }
 }
+
+CRGB MatrixConfig::getLEDColor(uint16_t index) const {
+    return BitmapConfig::getPrimaryLEDColor(index);
+}
+
+bool MatrixConfig::loadBitmap(const char* filename) {
+    return BitmapConfig::loadPrimaryBitmap(filename);
+}

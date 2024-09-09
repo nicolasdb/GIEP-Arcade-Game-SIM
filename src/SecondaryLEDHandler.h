@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <FastLED.h>
 #include "config.h"
+#include "BitmapConfig.h"
 
 enum class SecondaryLEDZone {
     GIEP_1,
@@ -33,6 +34,7 @@ public:
     void blinkAll(CRGB color);
     void stopBlinking();
     void setZoneState(SecondaryLEDZone zone, bool state, CRGB color);
+    bool loadBitmap(const char* filename);
 
 private:
     CRGB leds[TOTAL_SECONDARY_LEDS];

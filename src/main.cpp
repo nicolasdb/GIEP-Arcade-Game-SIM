@@ -11,6 +11,9 @@
 #include "ButtonHandler.h"
 #include "MCP23017Handler.h"
 #include "SecondaryLEDHandler.h"
+#include "ConfigLoader.h"
+#include "BitmapConfig.h"
+#include <SPIFFS.h>
 
 CRGB leds[NUM_LEDS];
 MatrixConfig matrixConfig(MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX_ORIENTATION, true);
@@ -65,13 +68,31 @@ void setup() {
     DebugLogger::init(Serial, LogLevel::CRITICAL);
     DebugLogger::critical("System initialized");
 
+    if (!SPIFFS.begin(true)) {
+        DebugLogger::critical("An error occurred while mounting SPIFFS");
+        return;
+    }
+
+    // Load configuration
+    if (!ConfigLoader::loadConfig("/game_config.json")) {
+        DebugLogger::critical("Failed to load game configuration");
+    }
+
+    // Load bitmaps
+    if (!matrixConfig.loadBitmap("/primary_bitmap.bin")) {
+        DebugLogger::critical("Failed to load primary bitmap");
+    }
+    if (!secondaryLEDs.loadBitmap("/secondary_bitmap.bin")) {
+        DebugLogger::critical("Failed to load secondary bitmap");
+    }
+
     pinMode(DEBUG_BUTTON_PIN, INPUT_PULLUP);
     pinMode(BASIN_GATE_BUTTON_PIN, INPUT_PULLUP);
     pinMode(BASIN_GATE_LED_PIN, OUTPUT);
 
     mcpHandler.begin();
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setBrightness(BRIGHTNESS);
+    FastLED.setBrightness(ConfigLoader::BRIGHTNESS());
     FastLED.clear();
     FastLED.show();
     secondaryLEDs.begin();

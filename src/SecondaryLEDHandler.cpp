@@ -1,5 +1,6 @@
 #include "SecondaryLEDHandler.h"
 #include "DebugLogger.h"
+#include "ConfigLoader.h"
 
 SecondaryLEDHandler::SecondaryLEDHandler() : endGameState(SecondaryLEDZone::GIEP_1), rainLevel(0), isBlinking(false), lastBlinkTime(0) {
     memset(zoneStates, 0, sizeof(zoneStates));
@@ -85,7 +86,7 @@ void SecondaryLEDHandler::updateLEDs() {
         for (int zone = 0; zone < SECONDARY_NUM_ZONES; zone++) {
             if (zoneStates[zone]) {
                 for (int i = 0; i < LEDS_PER_ZONE; i++) {
-                    leds[zone * LEDS_PER_ZONE + i] = CRGB(GET_SECONDARY_LED_COLOR(zone, i));
+                    leds[zone * LEDS_PER_ZONE + i] = BitmapConfig::getSecondaryLEDColor(zone * LEDS_PER_ZONE + i);
                 }
                 DebugLogger::debug("Zone %d LEDs turned on", zone);
             } else {
@@ -104,7 +105,7 @@ void SecondaryLEDHandler::updateBlinkEffect() {
     }
 
     unsigned long currentTime = millis();
-    if (currentTime - lastBlinkTime >= BLINK_DURATION) {
+    if (currentTime - lastBlinkTime >= ConfigLoader::getBlinkDuration()) {
         lastBlinkTime = currentTime;
         for (int i = 0; i < TOTAL_SECONDARY_LEDS; i++) {
             leds[i] = (leds[i] == CRGB::Black) ? blinkColor : CRGB::Black;
@@ -116,7 +117,7 @@ void SecondaryLEDHandler::updateBlinkEffect() {
 CRGB SecondaryLEDHandler::getColorForZone(SecondaryLEDZone zone) {
     uint8_t index = getZoneIndexFromBitmap(zone);
     if (index < SECONDARY_NUM_ZONES) {
-        CRGB color = CRGB(GET_SECONDARY_LED_COLOR(index, 0));
+        CRGB color = BitmapConfig::getSecondaryLEDColor(index * LEDS_PER_ZONE);
         DebugLogger::debug("Color for zone %d: (%d, %d, %d)", index, color.r, color.g, color.b);
         return color;
     }
@@ -172,4 +173,8 @@ uint8_t SecondaryLEDHandler::getZoneIndexFromBitmap(SecondaryLEDZone zone) {
         case SecondaryLEDZone::FLOOD_DEATH: return 10; // Same as POLLUTION_DEATH
         default: return SECONDARY_NUM_ZONES; // Invalid index
     }
+}
+
+bool SecondaryLEDHandler::loadBitmap(const char* filename) {
+    return BitmapConfig::loadSecondaryBitmap(filename);
 }

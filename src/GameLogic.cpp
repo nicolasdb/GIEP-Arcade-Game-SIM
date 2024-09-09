@@ -1,6 +1,6 @@
 #include "GameLogic.h"
 #include "config.h"
-#include "game_config.h"
+#include "ConfigLoader.h"
 #include "DebugLogger.h"
 
 GameLogic::GameLogic(Scene& scene, SecondaryLEDHandler& secondaryLEDs) 
@@ -14,7 +14,7 @@ void GameLogic::initializeGameState() {
     currentState = GameState::WAITING_RAINING;
     stateStartTime = millis();
     scene.setRainVisible(true);
-    scene.setRainIntensity(RAIN_INTENSITY_RAINING);
+    scene.setRainIntensity(ConfigLoader::RAIN_INTENSITY_RAINING());
     scene.setPollutionState(false);
     updateSecondaryLEDs();
 }
@@ -44,14 +44,14 @@ void GameLogic::updateWaitingMode() {
     unsigned long stateDuration = currentTime - stateStartTime;
 
     if (currentState == GameState::WAITING_RAINING) {
-        sewerLevel += SEWER_INCREASE_RATE_RAINING - SEWER_DRAIN_RATE;
-        if (stateDuration >= WAITING_RAINING_DURATION) {
+        sewerLevel += ConfigLoader::SEWER_INCREASE_RATE_RAINING() - ConfigLoader::SEWER_DRAIN_RATE();
+        if (stateDuration >= ConfigLoader::WAITING_RAINING_DURATION()) {
             transitionState(GameState::WAITING_DRY);
             scene.setRainVisible(false);
         }
     } else if (currentState == GameState::WAITING_DRY) {
-        sewerLevel -= SEWER_DRAIN_RATE;
-        if (stateDuration >= WAITING_DRY_DURATION) {
+        sewerLevel -= ConfigLoader::SEWER_DRAIN_RATE();
+        if (stateDuration >= ConfigLoader::WAITING_DRY_DURATION()) {
             transitionState(GameState::WAITING_RAINING);
             scene.setRainVisible(true);
         }
@@ -87,7 +87,7 @@ void GameLogic::startGame() {
     currentState = GameState::RAINING;
     stateStartTime = millis();
     scene.setRainVisible(true);
-    scene.setRainIntensity(RAIN_INTENSITY_RAINING);
+    scene.setRainIntensity(ConfigLoader::RAIN_INTENSITY_RAINING());
     DebugLogger::critical("Game started");
 }
 
@@ -146,11 +146,11 @@ void GameLogic::updateWeatherCycle() {
     unsigned long currentTime = millis();
     unsigned long stateDuration = currentTime - stateStartTime;
 
-    if (currentState == GameState::RAINING && stateDuration >= RAINING_DURATION) {
+    if (currentState == GameState::RAINING && stateDuration >= ConfigLoader::RAINING_DURATION()) {
         transitionState(GameState::HEAVY);
-    } else if (currentState == GameState::HEAVY && stateDuration >= HEAVY_DURATION) {
+    } else if (currentState == GameState::HEAVY && stateDuration >= ConfigLoader::HEAVY_DURATION()) {
         transitionState(GameState::STORM);
-    } else if (currentState == GameState::STORM && stateDuration >= STORM_DURATION) {
+    } else if (currentState == GameState::STORM && stateDuration >= ConfigLoader::STORM_DURATION()) {
         transitionState(GameState::RAINING);
     }
 }
@@ -159,13 +159,13 @@ void GameLogic::updateWaterLevels() {
     float sewerIncreaseRate = 0.0f;
     switch (currentState) {
         case GameState::RAINING:
-            sewerIncreaseRate = SEWER_INCREASE_RATE_RAINING;
+            sewerIncreaseRate = ConfigLoader::SEWER_INCREASE_RATE_RAINING();
             break;
         case GameState::HEAVY:
-            sewerIncreaseRate = SEWER_INCREASE_RATE_HEAVY;
+            sewerIncreaseRate = ConfigLoader::SEWER_INCREASE_RATE_HEAVY();
             break;
         case GameState::STORM:
-            sewerIncreaseRate = SEWER_INCREASE_RATE_STORM;
+            sewerIncreaseRate = ConfigLoader::SEWER_INCREASE_RATE_STORM();
             break;
         default:
             break;
@@ -174,19 +174,19 @@ void GameLogic::updateWaterLevels() {
     float giepEffect = 0;
     for (int i = 0; i < 8; i++) {
         if (buttonStates[i]) {
-            giepEffect += GIEP_EFFECT_STRENGTH;
+            giepEffect += ConfigLoader::GIEP_EFFECT_STRENGTH();
         }
     }
 
     if (currentState == GameState::RAINING || currentState == GameState::HEAVY || currentState == GameState::STORM) {
-        sewerLevel += sewerIncreaseRate - giepEffect - SEWER_DRAIN_RATE;
+        sewerLevel += sewerIncreaseRate - giepEffect - ConfigLoader::SEWER_DRAIN_RATE();
     } else {
-        sewerLevel -= SEWER_DRAIN_RATE;
+        sewerLevel -= ConfigLoader::SEWER_DRAIN_RATE();
     }
     sewerLevel = max(0.0f, min(sewerLevel, 1.0f));
 
     if (basinGateOpen) {
-        float transferAmount = min(BASIN_GATE_TRANSFER_RATE, sewerLevel);
+        float transferAmount = min(ConfigLoader::BASIN_GATE_TRANSFER_RATE(), sewerLevel);
         sewerLevel -= transferAmount;
         basinLevel += transferAmount;
     }
@@ -209,17 +209,17 @@ void GameLogic::updateRainIntensity() {
             break;
         case GameState::WAITING_RAINING:
         case GameState::RAINING:
-            intensity = RAIN_INTENSITY_RAINING;
+            intensity = ConfigLoader::RAIN_INTENSITY_RAINING();
             scene.setRainVisible(true);
             rainLevel = 1;
             break;
         case GameState::HEAVY:
-            intensity = RAIN_INTENSITY_HEAVY;
+            intensity = ConfigLoader::RAIN_INTENSITY_HEAVY();
             scene.setRainVisible(true);
             rainLevel = 2;
             break;
         case GameState::STORM:
-            intensity = RAIN_INTENSITY_STORM;
+            intensity = ConfigLoader::RAIN_INTENSITY_STORM();
             scene.setRainVisible(true);
             rainLevel = 3;
             break;
@@ -253,7 +253,7 @@ void GameLogic::handleGIEPEffects() {
 
 void GameLogic::handleBasinGate() {
     if (basinGateOpen) {
-        float transferAmount = min(BASIN_GATE_TRANSFER_RATE * sewerLevel, BASIN_OVERFLOW_THRESHOLD - basinLevel);
+        float transferAmount = min(ConfigLoader::BASIN_GATE_TRANSFER_RATE() * sewerLevel, ConfigLoader::BASIN_OVERFLOW_THRESHOLD() - basinLevel);
         sewerLevel -= transferAmount;
         basinLevel += transferAmount;
         
@@ -266,15 +266,15 @@ void GameLogic::checkForStateTransition() {
     DebugLogger::critical("Checking state transition - Current State: %s, Sewer Level: %.2f, Basin Level: %.2f", 
                           getStateString(), sewerLevel, basinLevel);
 
-    if (sewerLevel >= SEWER_OVERFLOW_THRESHOLD) {
+    if (sewerLevel >= ConfigLoader::SEWER_OVERFLOW_THRESHOLD()) {
         DebugLogger::critical("Sewer overflow detected. Ending game with FLOOD state.");
         endGame(GameState::FLOOD);
-    } else if (basinLevel >= BASIN_OVERFLOW_THRESHOLD) {
+    } else if (basinLevel >= ConfigLoader::BASIN_OVERFLOW_THRESHOLD()) {
         DebugLogger::critical("Basin overflow detected. Ending game with CANAL state.");
         endGame(GameState::CANAL);
     } else if (currentState == GameState::STORM) {
         unsigned long stormDuration = millis() - stateStartTime;
-        if (stormDuration >= STORM_DURATION / 2 && sewerLevel <= WIN_THRESHOLD && basinLevel <= WIN_THRESHOLD) {
+        if (stormDuration >= ConfigLoader::STORM_DURATION() / 2 && sewerLevel <= ConfigLoader::WIN_THRESHOLD() && basinLevel <= ConfigLoader::WIN_THRESHOLD()) {
             DebugLogger::critical("Win condition met. Ending game with WIN state.");
             endGame(GameState::WIN);
         }
@@ -371,7 +371,7 @@ void GameLogic::updateSecondaryLEDs() {
     unsigned long currentTime = millis();
     if (currentState == GameState::FLOOD || currentState == GameState::CANAL || currentState == GameState::WIN) {
         unsigned long stateDuration = currentTime - stateStartTime;
-        if (stateDuration >= END_STATE_DURATION) {
+        if (stateDuration >= ConfigLoader::END_STATE_DURATION()) {
             resetGame();
         }
     }

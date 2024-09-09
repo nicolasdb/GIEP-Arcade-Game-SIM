@@ -1,5 +1,6 @@
 #include "Scene.h"
 #include "config.h"
+#include "ConfigLoader.h"
 #include <stack>
 
 Scene::Scene(const MatrixConfig& config)
@@ -134,22 +135,22 @@ void Scene::draw(CRGB* leds) const {
     rainSystem.draw(leds);
 
     // Draw sewer level
-    drawWaterLevel(leds, sewerShape, sewerLevel, CRGB(SEWER_BRIGHTNESS, SEWER_BRIGHTNESS, 0), CRGB(SEWER_EMPTY_BRIGHTNESS, SEWER_EMPTY_BRIGHTNESS, 0));
+    drawWaterLevel(leds, sewerShape, sewerLevel, CRGB(ConfigLoader::SEWER_BRIGHTNESS(), ConfigLoader::SEWER_BRIGHTNESS(), 0), CRGB(ConfigLoader::SEWER_EMPTY_BRIGHTNESS(), ConfigLoader::SEWER_EMPTY_BRIGHTNESS(), 0));
 
     // Draw basin level
-    drawWaterLevel(leds, basinShape, basinLevel, CRGB(0, 0, BASIN_BRIGHTNESS), CRGB(0, 0, BASIN_EMPTY_BRIGHTNESS));
+    drawWaterLevel(leds, basinShape, basinLevel, CRGB(0, 0, ConfigLoader::BASIN_BRIGHTNESS()), CRGB(0, 0, ConfigLoader::BASIN_EMPTY_BRIGHTNESS()));
     
     // Draw basin gate
     for (const auto& point : basinGateShape) {
         uint16_t index = matrixConfig.XY(point.x, point.y);
-        leds[index] = basinGateActive ? CRGB(BASIN_GATE_BRIGHTNESS, 0, 0) : CRGB(BASIN_GATE_INACTIVE_BRIGHTNESS, 0, 0);
+        leds[index] = basinGateActive ? CRGB(ConfigLoader::BASIN_GATE_BRIGHTNESS(), 0, 0) : CRGB(ConfigLoader::BASIN_GATE_INACTIVE_BRIGHTNESS(), 0, 0);
     }
 
     // Draw basin overflow and river
     if (isBasinOverflow) {
         for (const auto& point : basinOverflowShape) {
             uint16_t index = matrixConfig.XY(point.x, point.y);
-            leds[index] = CRGB(BASIN_OVERFLOW_BRIGHTNESS, 0, BASIN_OVERFLOW_BRIGHTNESS);
+            leds[index] = CRGB(ConfigLoader::BASIN_OVERFLOW_BRIGHTNESS(), 0, ConfigLoader::BASIN_OVERFLOW_BRIGHTNESS());
         }
     }
 
@@ -250,7 +251,7 @@ const bool* Scene::getBuildingMap() const {
 CRGB Scene::getColorForPixelType(PixelType type) const {
     switch (type) {
         case PixelType::ACTIVE:
-            return CRGB(ACTIVE_BRIGHTNESS, ACTIVE_BRIGHTNESS, ACTIVE_BRIGHTNESS);  // Dim white for active areas
+            return CRGB(ConfigLoader::ACTIVE_BRIGHTNESS(), ConfigLoader::ACTIVE_BRIGHTNESS(), ConfigLoader::ACTIVE_BRIGHTNESS());  // Dim white for active areas
         case PixelType::BUILDING:
             return CRGB::Black;
         case PixelType::SEWER:
@@ -265,10 +266,10 @@ CRGB Scene::getColorForPixelType(PixelType type) const {
         case PixelType::GIEP_7:
         case PixelType::GIEP_8: {
             int index = static_cast<int>(type) - static_cast<int>(PixelType::GIEP_1);
-            return giepStates[index] ? CRGB(0, GIEP_ACTIVE_BRIGHTNESS, 0) : CRGB(0, GIEP_INACTIVE_BRIGHTNESS, 0);
+            return giepStates[index] ? CRGB(0, ConfigLoader::GIEP_ACTIVE_BRIGHTNESS(), 0) : CRGB(0, ConfigLoader::GIEP_INACTIVE_BRIGHTNESS(), 0);
         }
         case PixelType::BASIN_GATE:
-            return basinGateActive ? CRGB(BASIN_GATE_BRIGHTNESS, 0, 0) : CRGB(BASIN_GATE_INACTIVE_BRIGHTNESS, 0, 0);
+            return basinGateActive ? CRGB(ConfigLoader::BASIN_GATE_BRIGHTNESS(), 0, 0) : CRGB(ConfigLoader::BASIN_GATE_INACTIVE_BRIGHTNESS(), 0, 0);
         case PixelType::BASIN_OVERFLOW:
         case PixelType::RIVER:
             return CRGB::Black;  // These are now handled in the draw method
@@ -344,7 +345,7 @@ void Scene::updateOverflowState() {
 }
 
 CRGB Scene::getSewerColor() const {
-    return CRGB(SEWER_BRIGHTNESS, SEWER_BRIGHTNESS, 0);
+    return CRGB(ConfigLoader::SEWER_BRIGHTNESS(), ConfigLoader::SEWER_BRIGHTNESS(), 0);
 }
 
 void Scene::updateRiverFlow() {
@@ -367,7 +368,7 @@ void Scene::drawRiver(CRGB* leds) const {
     for (const auto& point : riverShape) {
         uint16_t index = matrixConfig.XY(point.x, point.y);
         if (isPolluted) {
-            leds[index] = CRGB(RIVER_BRIGHTNESS, 0, RIVER_BRIGHTNESS); // Magenta for pollution
+            leds[index] = CRGB(ConfigLoader::RIVER_BRIGHTNESS(), 0, ConfigLoader::RIVER_BRIGHTNESS()); // Magenta for pollution
         } else if (point.y >= maxY - animatedLevels + 1) { // Animate the bottom 3 levels (or less if river is smaller)
             // Create a flowing effect from left to right
             // CHANGED: Adjusted the multiplier to control flow speed

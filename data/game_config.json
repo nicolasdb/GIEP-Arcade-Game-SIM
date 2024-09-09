@@ -1,0 +1,48 @@
+{
+    "timing": {
+        "waiting_raining_duration": 10000,
+        "waiting_dry_duration": 10000,
+        "raining_duration": 30000,
+        "heavy_duration": 25000,
+        "storm_duration": 25000,
+        "end_state_duration": 20000
+    },
+    "sewer_mechanics": {
+        "increase_rate_raining": 0.002,
+        "increase_rate_heavy": 0.004,
+        "increase_rate_storm": 0.006,
+        "giep_effect_strength": 0.003,
+        "drain_rate": 0.001,
+        "basin_gate_transfer_rate": 0.005
+    },
+    "game_balance": {
+        "sewer_overflow_threshold": 0.95,
+        "basin_overflow_threshold": 0.95,
+        "win_threshold": 0.5
+    },
+    "rain_visuals": {
+        "intensity_raining": 0.005,
+        "intensity_heavy": 0.02,
+        "intensity_storm": 0.04,
+        "max_trail_length": 2,
+        "heavy_multiplier": 3.0,
+        "storm_multiplier": 5.0,
+        "storm_wind_chance": 255
+    },
+    "brightness_levels": {
+        "default": 30,
+        "active": 16,
+        "giep_active": 255,
+        "giep_inactive": 40,
+        "rain": 190,
+        "sewer": 255,
+        "sewer_empty": 12,
+        "basin": 255,
+        "basin_empty": 12,
+        "basin_gate": 255,
+        "basin_gate_inactive": 40,
+        "basin_overflow": 255,
+        "river": 255
+    },
+    "blink_duration": 500
+}
