@@ -22,7 +22,8 @@ public:
     void handleButton(uint8_t buttonIndex, bool isPressed);
     void handleBasinGateButton(bool isPressed);
     GameState getState() const { return currentState; }
-    const char* getStateString() const;  
+    const char* getStateString() const;
+    const char* getStateString(GameState state) const;  // Added this line
     void initializeGameState();
 
 private:

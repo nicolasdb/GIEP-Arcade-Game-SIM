@@ -5,6 +5,7 @@
 #include "MatrixConfig.h"
 #include "DebugLogger.h"
 #include "config.h"
+#include "RainSystem.h"
 
 enum class PixelType {
     ACTIVE,
@@ -51,21 +52,21 @@ public:
     void setRainIntensity(float intensity);
     float getRainIntensity() const;
     void setRainVisible(bool visible); 
+    void setRainMode(RainMode mode);
     CRGB getSewerColor() const;
     void setPollutionState(bool polluted);
+    const bool* getBuildingMap() const;
 
 private:
     const MatrixConfig& matrixConfig;
     PixelType* pixelMap;
-    uint8_t* rainDrops;
+    bool* buildingMap;
     uint8_t width;
     uint8_t height;
     bool giepStates[8];
     bool basinGateActive;
     float sewerLevel;
     float basinLevel;
-    float rainIntensity;
-    bool isRainVisible;
     bool isBasinOverflow;
     std::vector<Point> sewerShape;
     std::vector<Point> basinShape;
@@ -74,13 +75,13 @@ private:
     std::vector<Point> riverShape;
     uint8_t riverFlowOffset;
     bool isPolluted;
+    RainSystem rainSystem;
 
     void initializePixelMap();
-    void initializeRain();
+    void initializeBuildingMap();
     void cleanupPixelMap();
-    void cleanupRain();
+    void cleanupBuildingMap();
     CRGB getColorForPixelType(PixelType type) const;
-    void updateRain();
     void drawWaterLevel(CRGB* leds, const std::vector<Point>& shape, float level, CRGB fullColor, CRGB emptyColor) const;
     void detectShapes();
     void floodFill(uint8_t startX, uint8_t startY, PixelType targetType, std::vector<Point>& shape, std::vector<bool>& visited);

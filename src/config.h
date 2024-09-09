@@ -85,7 +85,7 @@ const uint32_t DEFAULT_BITMAP[625] = {
     0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x0000FF, 0x0000FF, 0x0000FF, 0x0000FF, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x6400FF, 0x6400FF, 0x6400FF, 0x000000, 0x000000, 
     0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000
 };
-        
+
 // Secondary LED bitmap (4x15 pixels)
 // Each uint32_t represents a column of 4 LEDs for a zone
 const uint32_t SECONDARY_LED_BITMAP[60] = {
@@ -104,6 +104,58 @@ const uint32_t SECONDARY_LED_BITMAP[60] = {
     0x0000E3, 0x0000E3, 0x0000E3, 0x0000E3  
 };
 
+// Secondary LED configuration
+#define SECONDARY_LED_PIN 7
+#define SECONDARY_NUM_ZONES 15
+#define LEDS_PER_ZONE 4
+#define TOTAL_SECONDARY_LEDS (SECONDARY_NUM_ZONES * LEDS_PER_ZONE)
+
+// Secondary LED zone indices (reordered to match hardware setup)
+#define GIEP_1_ZONE 0
+#define GIEP_2_ZONE 1
+#define GIEP_3_ZONE 2
+#define GIEP_4_ZONE 3
+#define BASIN_GATE_ZONE 4
+#define GIEP_8_ZONE 5
+#define GIEP_7_ZONE 6
+#define GIEP_6_ZONE 7
+#define GIEP_5_ZONE 8
+#define WIN_ZONE 9
+#define FLOOD_DEATH_ZONE 10
+#define POLLUTION_DEATH_ZONE 11
+#define RAIN_LEVEL_3_ZONE 12
+#define RAIN_LEVEL_2_ZONE 13
+#define RAIN_LEVEL_1_ZONE 14
+
+// New mapping structure for secondary LED zones
+struct SecondaryLEDZoneMapping {
+    uint8_t start_index;
+    uint8_t length;
+};
+
+const SecondaryLEDZoneMapping SECONDARY_LED_ZONE_MAPPING[SECONDARY_NUM_ZONES] = {
+    {0, 4},   // GIEP_1_ZONE
+    {4, 4},   // GIEP_2_ZONE
+    {8, 4},   // GIEP_3_ZONE
+    {12, 4},  // GIEP_4_ZONE
+    {16, 4},  // BASIN_GATE_ZONE
+    {20, 4},  // GIEP_8_ZONE
+    {24, 4},  // GIEP_7_ZONE
+    {28, 4},  // GIEP_6_ZONE
+    {32, 4},  // GIEP_5_ZONE
+    {36, 4},  // WIN_ZONE
+    {40, 2},  // FLOOD_DEATH_ZONE
+    {42, 2},  // POLLUTION_DEATH_ZONE
+    {44, 4},  // RAIN_LEVEL_3_ZONE
+    {48, 4},  // RAIN_LEVEL_2_ZONE
+    {52, 4}   // RAIN_LEVEL_1_ZONE
+};
+
+// Helper function to get LED color for a specific zone and LED index
+#define GET_SECONDARY_LED_COLOR(zone, led_index) \
+    ((SECONDARY_LED_BITMAP[SECONDARY_LED_ZONE_MAPPING[zone].start_index + \
+    (led_index % SECONDARY_LED_ZONE_MAPPING[zone].length)]))
+
 // LED colors
 #define SEWER_COLOR CRGB::Yellow
 #define BASIN_COLOR CRGB::Blue
@@ -113,67 +165,10 @@ const uint32_t SECONDARY_LED_BITMAP[60] = {
 #define BASIN_OVERFLOW_COLOR CRGB::Green
 #define RIVER_COLOR CRGB(100, 0, 255)  // Purple color for the river
 
-// Task configuration
-#define BUTTON_TASK_STACK_SIZE 2048
-#define GAME_UPDATE_TASK_STACK_SIZE 4096
-#define LED_UPDATE_TASK_STACK_SIZE 2048
-#define BUTTON_TASK_PRIORITY 3
-#define GAME_UPDATE_TASK_PRIORITY 2
-#define LED_UPDATE_TASK_PRIORITY 1
-
-// Secondary LED configuration
-#define SECONDARY_LED_PIN 7
-#define SECONDARY_NUM_ZONES 15
-#define LEDS_PER_ZONE 4
-#define TOTAL_SECONDARY_LEDS (SECONDARY_NUM_ZONES * LEDS_PER_ZONE)
-
-// Secondary LED zone indices
-#define GIEP_1_ZONE 0
-#define GIEP_2_ZONE 1
-#define GIEP_3_ZONE 2
-#define GIEP_4_ZONE 3
-#define GIEP_5_ZONE 4
-#define GIEP_6_ZONE 5
-#define GIEP_7_ZONE 6
-#define GIEP_8_ZONE 7
-#define BASIN_GATE_ZONE 8
-#define RAIN_LEVEL_1_ZONE 9
-#define RAIN_LEVEL_2_ZONE 10
-#define RAIN_LEVEL_3_ZONE 11
-#define FLOOD_DEATH_ZONE 12
-#define POLLUTION_DEATH_ZONE 13
-#define WIN_ZONE 14
-
-// Helper function to get LED color for a specific zone and LED index
-#define GET_SECONDARY_LED_COLOR(zone, led_index) ((SECONDARY_LED_BITMAP[zone * 4 + led_index]))
-
 // Function to initialize the watchdog timer
 void initWatchdog();
 
-// Function to get the color name from the color value
-inline const char* getColorName(uint32_t color) {
-    switch (color) {
-        case COLOR_WHITE: return "WHITE";
-        case COLOR_BLACK: return "BLACK";
-        case COLOR_GREEN_1: return "GREEN_1";
-        case COLOR_GREEN_2: return "GREEN_2";
-        case COLOR_GREEN_3: return "GREEN_3";
-        case COLOR_GREEN_4: return "GREEN_4";
-        case COLOR_GREEN_5: return "GREEN_5";
-        case COLOR_GREEN_6: return "GREEN_6";
-        case COLOR_GREEN_7: return "GREEN_7";
-        case COLOR_GREEN_8: return "GREEN_8";
-        case COLOR_YELLOW: return "YELLOW";
-        case COLOR_BLUE: return "BLUE";
-        case COLOR_RED: return "RED";
-        case COLOR_MAGENTA: return "MAGENTA";
-        case COLOR_PURPLE: return "PURPLE";
-        case COLOR_DARK_BLUE: return "DARK_BLUE";
-        case COLOR_MEDIUM_BLUE: return "MEDIUM_BLUE";
-        case COLOR_LIGHT_BLUE: return "LIGHT_BLUE";
-        case COLOR_DARK_RED: return "DARK_RED";
-        case COLOR_MEDIUM_RED: return "MEDIUM_RED";
-        case COLOR_CYAN: return "CYAN";
-        default: return "UNKNOWN";
-    }
-}
+// Function declarations for LED control
+void setFloodDeathZone(CRGB* leds, bool active);
+void setPollutionDeathZone(CRGB* leds, bool active);
+void updateDeathZones(CRGB* leds, bool isGameOver, bool isFloodDeath, bool isPollutionDeath);
