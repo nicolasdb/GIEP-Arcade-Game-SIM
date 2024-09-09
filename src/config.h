@@ -26,7 +26,7 @@
 #define BASIN_GATE_LED_PIN 3
 #define DEBUG_BUTTON_PIN 0
 
-// Global switch for button LEDs
+// Global switch for button LEDs (including button 9)
 #define USE_BUTTON_LEDS false
 
 // Watchdog configuration
@@ -107,7 +107,7 @@ const uint32_t SECONDARY_LED_BITMAP[60] = {
 // LED colors
 #define SEWER_COLOR CRGB::Yellow
 #define BASIN_COLOR CRGB::Blue
-#define SEWER_EMPTY_COLOR CRGB(16, 16, 0)  // Dim yellow
+#define SEWER_EMPTY_COLOR CRGB(20, 20, 0)  // Dim yellow
 #define BASIN_EMPTY_COLOR CRGB(0, 0, 16)   // Dim blue
 #define BASIN_GATE_COLOR CRGB::Red
 #define BASIN_OVERFLOW_COLOR CRGB::Green

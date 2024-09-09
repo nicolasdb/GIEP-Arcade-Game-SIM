@@ -51,6 +51,8 @@ public:
     void setRainIntensity(float intensity);
     float getRainIntensity() const;
     void setRainVisible(bool visible); 
+    CRGB getSewerColor() const;
+    void setPollutionState(bool polluted);
 
 private:
     const MatrixConfig& matrixConfig;
@@ -70,6 +72,8 @@ private:
     std::vector<Point> basinGateShape;
     std::vector<Point> basinOverflowShape;
     std::vector<Point> riverShape;
+    uint8_t riverFlowOffset;
+    bool isPolluted;
 
     void initializePixelMap();
     void initializeRain();
@@ -81,4 +85,6 @@ private:
     void detectShapes();
     void floodFill(uint8_t startX, uint8_t startY, PixelType targetType, std::vector<Point>& shape, std::vector<bool>& visited);
     void updateOverflowState();
+    void updateRiverFlow();
+    void drawRiver(CRGB* leds) const;
 };

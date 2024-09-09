@@ -3,7 +3,8 @@
 #include <stack>
 
 Scene::Scene(const MatrixConfig& config) : matrixConfig(config), width(config.getWidth()), height(config.getHeight()), 
-    rainIntensity(0), isRainVisible(true), sewerLevel(0), basinLevel(0), basinGateActive(false), isBasinOverflow(false) {
+    rainIntensity(0), isRainVisible(true), sewerLevel(0), basinLevel(0), basinGateActive(false), isBasinOverflow(false),
+    riverFlowOffset(0), isPolluted(false) {
     initializePixelMap();
     initializeRain();
     memset(giepStates, 0, sizeof(giepStates));
@@ -100,6 +101,7 @@ void Scene::setPixelType(uint8_t x, uint8_t y, PixelType type) {
 void Scene::update() {
     updateRain();
     updateOverflowState();
+    updateRiverFlow();
 }
 
 void Scene::draw(CRGB* leds) const {
@@ -136,11 +138,10 @@ void Scene::draw(CRGB* leds) const {
             uint16_t index = matrixConfig.XY(point.x, point.y);
             leds[index] = CRGB(BASIN_OVERFLOW_BRIGHTNESS, 0, BASIN_OVERFLOW_BRIGHTNESS);
         }
-        for (const auto& point : riverShape) {
-            uint16_t index = matrixConfig.XY(point.x, point.y);
-            leds[index] = CRGB(RIVER_BRIGHTNESS, 0, RIVER_BRIGHTNESS);
-        }
     }
+
+    // Draw river with flowing effect
+    drawRiver(leds);
     
     DebugLogger::debug("Basin Gate Active: %d, Basin Overflow: %d", basinGateActive, isBasinOverflow);
 }
@@ -344,4 +345,46 @@ void Scene::floodFill(uint8_t startX, uint8_t startY, PixelType targetType, std:
 
 void Scene::updateOverflowState() {
     isBasinOverflow = (basinLevel >= 1.0f);
+}
+
+CRGB Scene::getSewerColor() const {
+    return CRGB(SEWER_BRIGHTNESS, SEWER_BRIGHTNESS, 0);
+}
+
+void Scene::updateRiverFlow() {
+    riverFlowOffset = (riverFlowOffset + 1); // Changed from 16 to 20 steps for a complete cycle
+}
+
+void Scene::drawRiver(CRGB* leds) const {
+    if (riverShape.empty()) return;
+
+    uint8_t minY = height;
+    uint8_t maxY = 0;
+    for (const auto& point : riverShape) {
+        if (point.y < minY) minY = point.y;
+        if (point.y > maxY) maxY = point.y;
+    }
+
+    uint8_t totalHeight = maxY - minY + 1;
+    uint8_t animatedLevels = std::min(totalHeight, static_cast<uint8_t>(3)); // Animate only the first 3 levels
+
+    for (const auto& point : riverShape) {
+        uint16_t index = matrixConfig.XY(point.x, point.y);
+        if (isPolluted) {
+            leds[index] = CRGB(RIVER_BRIGHTNESS, 0, RIVER_BRIGHTNESS); // Magenta for pollution
+        } else if (point.y >= maxY - animatedLevels + 1) { // Animate the bottom 3 levels (or less if river is smaller)
+            // Create a flowing effect from left to right
+            // CHANGED: Adjusted the multiplier to control flow speed
+            uint8_t brightness = sin8((width - point.x) * 25 + riverFlowOffset * 5);
+            brightness = map(brightness, 0, 255, 70, 255); // Adjust the range of blue shades
+            leds[index] = CRGB(0, 0, brightness); // Only blue shades
+        } else {
+            // Use a dimmer blue color for the upper part of the river
+            leds[index] = CRGB(0, 0, 20); // Dimmer blue for non-animated part
+        }
+    }
+}
+
+void Scene::setPollutionState(bool polluted) {
+    isPolluted = polluted;
 }

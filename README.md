@@ -42,6 +42,42 @@ This project is a simulation of an arcade game for GIEP (Green Infrastructure an
 4. Players can open/close the basin gate to transfer water between the sewer and basin.
 5. The game ends in a win state if the player survives until the end of the storm, or in a loss state if the sewer overflows or the basin pollutes the river.
 
+## Game Logic
+
+The game progresses through the following states:
+
+1. Waiting Phase:
+   - The game cycles between WAITING_RAINING and WAITING_DRY states.
+   - This phase serves as an attract mode to draw players' attention.
+
+2. Active Gameplay:
+   - Starts when a player presses any button during the waiting phase.
+   - Progresses through RAINING, HEAVY, and STORM weather conditions.
+   - Each weather condition has a specific duration and rain intensity.
+
+3. Player Interactions:
+   - Players can activate/deactivate 8 GIEP (Green Infrastructure Element) buttons.
+   - Each active GIEP reduces the rate at which the sewer level increases.
+   - Players can also control a basin gate to transfer water from the sewer to the basin.
+
+4. Water Management:
+   - The sewer level increases with rainfall and decreases with GIEP effects and natural drainage.
+   - The basin level increases when the basin gate is open, transferring water from the sewer.
+   - Players must balance the use of GIEPs and the basin gate to prevent overflow.
+
+5. Win Condition:
+   - Achieved when both sewer and basin levels are below a certain threshold after a storm.
+
+6. Lose Conditions:
+   - FLOOD: Occurs when the sewer level reaches its overflow threshold.
+   - CANAL: Occurs when the basin level reaches its overflow threshold, polluting the river.
+
+7. Game Over:
+   - After a win or lose condition is met, the game displays the result for a set duration.
+   - The game then automatically returns to the waiting phase, ready for the next player.
+
+The game's difficulty progressively increases with each weather state, challenging players to use strategy and quick decision-making to manage the water levels effectively.
+
 ## Secondary LED Array
 
 The secondary LED array provides additional visual feedback:

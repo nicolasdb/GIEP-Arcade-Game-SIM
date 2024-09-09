@@ -1,39 +1,76 @@
 #include "SecondaryLEDHandler.h"
+#include "DebugLogger.h"
 
-SecondaryLEDHandler::SecondaryLEDHandler() : endGameState(SecondaryLEDZone::GIEP_1), rainLevel(0) {
+SecondaryLEDHandler::SecondaryLEDHandler() : endGameState(SecondaryLEDZone::GIEP_1), rainLevel(0), isBlinking(false), lastBlinkTime(0) {
     memset(zoneStates, 0, sizeof(zoneStates));
+    DebugLogger::debug("SecondaryLEDHandler initialized");
 }
 
 void SecondaryLEDHandler::begin() {
     FastLED.addLeds<WS2813, SECONDARY_LED_PIN, GRB>(leds, TOTAL_SECONDARY_LEDS);
     FastLED.clear();
     FastLED.show();
+    DebugLogger::debug("SecondaryLEDHandler begun");
 }
 
 void SecondaryLEDHandler::update() {
     updateLEDs();
+    updateBlinkEffect();
     FastLED.show();
+    DebugLogger::debug("SecondaryLEDHandler updated");
 }
 
 void SecondaryLEDHandler::setZoneState(SecondaryLEDZone zone, bool state) {
     uint8_t index = getZoneIndexFromBitmap(zone);
     if (index < SECONDARY_NUM_ZONES) {
         zoneStates[index] = state;
+        DebugLogger::debug("Zone %d state set to %d", index, state);
+    } else {
+        DebugLogger::error("Invalid zone index: %d", index);
+    }
+}
+
+void SecondaryLEDHandler::setZoneState(SecondaryLEDZone zone, bool state, CRGB color) {
+    uint8_t index = getZoneIndexFromBitmap(zone);
+    if (index < SECONDARY_NUM_ZONES) {
+        zoneStates[index] = state;
+        for (int i = 0; i < LEDS_PER_ZONE; i++) {
+            leds[index * LEDS_PER_ZONE + i] = state ? color : CRGB::Black;
+        }
+        DebugLogger::debug("Zone %d state set to %d with color (%d, %d, %d)", index, state, color.r, color.g, color.b);
+    } else {
+        DebugLogger::error("Invalid zone index: %d", index);
     }
 }
 
 void SecondaryLEDHandler::setRainLevel(uint8_t level) {
+    DebugLogger::debug("Setting rain level to %d", level);
     rainLevel = level;
-    setZoneState(SecondaryLEDZone::RAIN_LEVEL_1, level >= 1);
-    setZoneState(SecondaryLEDZone::RAIN_LEVEL_2, level >= 2);
-    setZoneState(SecondaryLEDZone::RAIN_LEVEL_3, level >= 3);
+    updateRainLevelIndicators();
+}
+
+void SecondaryLEDHandler::blinkAll(CRGB color) {
+    isBlinking = true;
+    blinkColor = color;
+    DebugLogger::debug("Set all LEDs to blink with color (%d, %d, %d)", color.r, color.g, color.b);
+}
+
+void SecondaryLEDHandler::stopBlinking() {
+    isBlinking = false;
+    DebugLogger::debug("Stopped blinking");
 }
 
 void SecondaryLEDHandler::setEndGameState(SecondaryLEDZone state) {
     endGameState = state;
+    DebugLogger::debug("Set end game state to %d", static_cast<int>(state));
 }
 
 void SecondaryLEDHandler::updateLEDs() {
+    if (isBlinking) {
+        DebugLogger::debug("Skipping LED update due to blinking");
+        return; // Don't update LEDs if we're in blink mode
+    }
+
     // Handle end game state
     if (endGameState == SecondaryLEDZone::FLOOD_DEATH ||
         endGameState == SecondaryLEDZone::POLLUTION_DEATH ||
@@ -42,6 +79,7 @@ void SecondaryLEDHandler::updateLEDs() {
         for (int i = 0; i < TOTAL_SECONDARY_LEDS; i++) {
             leds[i] = endGameColor;
         }
+        DebugLogger::debug("Updated LEDs for end game state %d", static_cast<int>(endGameState));
     } else {
         // Update all other zones
         for (int zone = 0; zone < SECONDARY_NUM_ZONES; zone++) {
@@ -49,29 +87,68 @@ void SecondaryLEDHandler::updateLEDs() {
                 for (int i = 0; i < LEDS_PER_ZONE; i++) {
                     leds[zone * LEDS_PER_ZONE + i] = CRGB(GET_SECONDARY_LED_COLOR(zone, i));
                 }
+                DebugLogger::debug("Zone %d LEDs turned on", zone);
             } else {
                 for (int i = 0; i < LEDS_PER_ZONE; i++) {
                     leds[zone * LEDS_PER_ZONE + i] = CRGB::Black;
                 }
+                DebugLogger::debug("Zone %d LEDs turned off", zone);
             }
         }
+    }
+}
+
+void SecondaryLEDHandler::updateBlinkEffect() {
+    if (!isBlinking) {
+        return;
+    }
+
+    unsigned long currentTime = millis();
+    if (currentTime - lastBlinkTime >= BLINK_DURATION) {
+        lastBlinkTime = currentTime;
+        for (int i = 0; i < TOTAL_SECONDARY_LEDS; i++) {
+            leds[i] = (leds[i] == CRGB::Black) ? blinkColor : CRGB::Black;
+        }
+        DebugLogger::debug("Blink effect updated");
     }
 }
 
 CRGB SecondaryLEDHandler::getColorForZone(SecondaryLEDZone zone) {
     uint8_t index = getZoneIndexFromBitmap(zone);
     if (index < SECONDARY_NUM_ZONES) {
-        return CRGB(GET_SECONDARY_LED_COLOR(index, 0));
+        CRGB color = CRGB(GET_SECONDARY_LED_COLOR(index, 0));
+        DebugLogger::debug("Color for zone %d: (%d, %d, %d)", index, color.r, color.g, color.b);
+        return color;
     }
+    DebugLogger::error("Invalid zone index: %d", index);
     return CRGB::Black;
 }
 
 void SecondaryLEDHandler::updateRainLevelIndicators() {
-    // This method is called by update() and handles the rain level indicators
-    for (int i = 0; i < 3; i++) {
-        SecondaryLEDZone rainZone = static_cast<SecondaryLEDZone>(static_cast<int>(SecondaryLEDZone::RAIN_LEVEL_1) + i);
-        bool isActive = i < rainLevel;
-        setZoneState(rainZone, isActive);
+    DebugLogger::debug("Updating rain level indicators. Current level: %d", rainLevel);
+    
+    // Turn off all rain level indicators
+    setZoneState(SecondaryLEDZone::RAIN_LEVEL_1, false);
+    setZoneState(SecondaryLEDZone::RAIN_LEVEL_2, false);
+    setZoneState(SecondaryLEDZone::RAIN_LEVEL_3, false);
+
+    // Turn on the appropriate rain level indicator based on the current rain level
+    switch (rainLevel) {
+        case 1:
+            setZoneState(SecondaryLEDZone::RAIN_LEVEL_1, true);
+            DebugLogger::debug("Rain level 1 indicator turned on");
+            break;
+        case 2:
+            setZoneState(SecondaryLEDZone::RAIN_LEVEL_2, true);
+            DebugLogger::debug("Rain level 2 indicator turned on");
+            break;
+        case 3:
+            setZoneState(SecondaryLEDZone::RAIN_LEVEL_3, true);
+            DebugLogger::debug("Rain level 3 indicator turned on");
+            break;
+        default:
+            DebugLogger::debug("No rain level indicators turned on");
+            break;
     }
 }
 
