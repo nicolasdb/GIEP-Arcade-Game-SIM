@@ -5,6 +5,7 @@
 #include "config.h"
 
 enum class SecondaryLEDZone {
+    NONE,
     GIEP_1,
     GIEP_2,
     GIEP_3,
@@ -30,22 +31,18 @@ public:
     void setZoneState(SecondaryLEDZone zone, bool state);
     void setRainLevel(uint8_t level);
     void setEndGameState(SecondaryLEDZone state);
-    void blinkAll(CRGB color);
-    void stopBlinking();
-    void setZoneState(SecondaryLEDZone zone, bool state, CRGB color);
+    static const char* getZoneName(SecondaryLEDZone zone);  // Added declaration
 
 private:
     CRGB leds[TOTAL_SECONDARY_LEDS];
     bool zoneStates[SECONDARY_NUM_ZONES];
     SecondaryLEDZone endGameState;
     uint8_t rainLevel;
-    bool isBlinking;
-    CRGB blinkColor;
     unsigned long lastBlinkTime;
 
-    void updateLEDs();
+    void updateNormalState();
+    void updateEndGameState();
     CRGB getColorForZone(SecondaryLEDZone zone);
     void updateRainLevelIndicators();
     uint8_t getZoneIndexFromBitmap(SecondaryLEDZone zone);
-    void updateBlinkEffect();
 };

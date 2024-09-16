@@ -23,7 +23,7 @@ public:
     void handleBasinGateButton(bool isPressed);
     GameState getState() const { return currentState; }
     const char* getStateString() const;
-    const char* getStateString(GameState state) const;  // Added this line
+    const char* getStateString(GameState state) const;
     void initializeGameState();
 
 private:
@@ -51,4 +51,7 @@ private:
     void updateActiveGame();
     void startGame();
     void endGame(GameState endState);
+    void updateGIEPAndBasinGateLEDs();
+    void checkEndGameTransition();
+    void handleWinStateButtonPress(uint8_t buttonIndex); // Add this line
 };

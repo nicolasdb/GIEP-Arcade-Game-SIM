@@ -26,6 +26,9 @@ void GameLogic::update() {
         updateWaitingMode();
     }
     updateSecondaryLEDs();
+    
+    DebugLogger::debug("Update complete - State: %s, Sewer: %.2f, Basin: %.2f", 
+                       getStateString(), sewerLevel, basinLevel);
 }
 
 void GameLogic::updateActiveGame() {
@@ -62,12 +65,14 @@ void GameLogic::updateWaitingMode() {
 }
 
 void GameLogic::handleButton(uint8_t buttonIndex, bool isPressed) {
-    if (currentState == GameState::FLOOD || currentState == GameState::CANAL || currentState == GameState::WIN) {
-        return; // Ignore button presses in end game states
+    // Ignore button presses in all end game states
+    if (currentState == GameState::WIN || currentState == GameState::FLOOD || currentState == GameState::CANAL) {
+        return;
     }
 
     if (!gameActive && isPressed) {
         startGame();
+        return;
     }
 
     if (buttonIndex < 8) {  // GIEP buttons
@@ -151,7 +156,14 @@ void GameLogic::updateWeatherCycle() {
     } else if (currentState == GameState::HEAVY && stateDuration >= HEAVY_DURATION) {
         transitionState(GameState::STORM);
     } else if (currentState == GameState::STORM && stateDuration >= STORM_DURATION) {
-        transitionState(GameState::RAINING);
+        DebugLogger::critical("STORM duration ended. Checking win condition.");
+        if (sewerLevel <= WIN_THRESHOLD && basinLevel <= WIN_THRESHOLD) {
+            DebugLogger::critical("Win condition met at the end of STORM. Ending game with WIN state.");
+            endGame(GameState::WIN);
+        } else {
+            DebugLogger::critical("Win condition not met. Transitioning back to RAINING state.");
+            transitionState(GameState::RAINING);
+        }
     }
 }
 
@@ -274,9 +286,12 @@ void GameLogic::checkForStateTransition() {
         endGame(GameState::CANAL);
     } else if (currentState == GameState::STORM) {
         unsigned long stormDuration = millis() - stateStartTime;
-        if (stormDuration >= STORM_DURATION / 2 && sewerLevel <= WIN_THRESHOLD && basinLevel <= WIN_THRESHOLD) {
-            DebugLogger::critical("Win condition met. Ending game with WIN state.");
+        if (sewerLevel <= WIN_THRESHOLD && basinLevel <= WIN_THRESHOLD) {
+            DebugLogger::critical("Win condition met during STORM. Ending game with WIN state.");
             endGame(GameState::WIN);
+        } else if (stormDuration >= STORM_DURATION) {
+            DebugLogger::critical("STORM duration ended. Transitioning to RAINING state.");
+            transitionState(GameState::RAINING);
         }
     }
 }
@@ -284,72 +299,59 @@ void GameLogic::checkForStateTransition() {
 void GameLogic::endGame(GameState endState) {
     DebugLogger::critical("Ending game. Previous state: %s, New state: %s", getStateString(), getStateString(endState));
     gameActive = false;
-    transitionState(endState);
+    currentState = endState;  // Set the current state directly
     stateStartTime = millis(); // Start the timer for END_STATE_DURATION
     if (endState == GameState::CANAL) {
         scene.setPollutionState(true);
     }
+    if (endState == GameState::WIN) {
+        DebugLogger::critical("WIN state set. Updating secondary LEDs for WIN state.");
+    }
+    updateSecondaryLEDs();  // Update LEDs immediately after changing state
 }
 
+// ... (keep all remaining code)
+
 void GameLogic::updateSecondaryLEDs() {
-    // Update win zone (4 pixels)
+    // Handle endgame states
     if (currentState == GameState::WIN) {
-        secondaryLEDs.setZoneState(SecondaryLEDZone::WIN, true, CRGB(COLOR_CYAN));
+        DebugLogger::debug("Updating secondary LEDs for WIN state");
+        secondaryLEDs.setEndGameState(SecondaryLEDZone::WIN);
+        // In WIN state, we still want to update GIEP zones for blinking
+        updateGIEPAndBasinGateLEDs();
+    } else if (currentState == GameState::FLOOD) {
+        secondaryLEDs.setEndGameState(SecondaryLEDZone::FLOOD_DEATH);
+    } else if (currentState == GameState::CANAL) {
+        secondaryLEDs.setEndGameState(SecondaryLEDZone::POLLUTION_DEATH);
     } else {
-        secondaryLEDs.setZoneState(SecondaryLEDZone::WIN, false);
+        secondaryLEDs.setEndGameState(SecondaryLEDZone::NONE);
+        
+        // Update rain level indicators
+        switch (currentState) {
+            case GameState::RAINING:
+                secondaryLEDs.setRainLevel(1);
+                break;
+            case GameState::HEAVY:
+                secondaryLEDs.setRainLevel(2);
+                break;
+            case GameState::STORM:
+                secondaryLEDs.setRainLevel(3);
+                break;
+            default:
+                secondaryLEDs.setRainLevel(0);
+                break;
+        }
+
+        // Update GIEP and Basin Gate LEDs
+        updateGIEPAndBasinGateLEDs();
     }
 
-    // Update flood zone (2 pixels)
-    if (currentState == GameState::FLOOD) {
-        secondaryLEDs.setZoneState(SecondaryLEDZone::FLOOD_DEATH, true, CRGB(COLOR_DARK_RED));
-    } else {
-        secondaryLEDs.setZoneState(SecondaryLEDZone::FLOOD_DEATH, false);
-    }
+    // Check if we need to transition back to waiting state after end game
+    checkEndGameTransition();
+}
 
-    // Update pollution zone (2 pixels)
-    if (currentState == GameState::CANAL) {
-        secondaryLEDs.setZoneState(SecondaryLEDZone::POLLUTION_DEATH, true, CRGB(COLOR_MEDIUM_RED));
-    } else {
-        secondaryLEDs.setZoneState(SecondaryLEDZone::POLLUTION_DEATH, false);
-    }
-
-    switch (currentState) {
-        case GameState::WAITING_RAINING:
-        case GameState::WAITING_DRY:
-            secondaryLEDs.stopBlinking();
-            secondaryLEDs.setRainLevel(0);
-            break;
-        case GameState::RAINING:
-            secondaryLEDs.stopBlinking();
-            secondaryLEDs.setRainLevel(1);
-            break;
-        case GameState::HEAVY:
-            secondaryLEDs.stopBlinking();
-            secondaryLEDs.setRainLevel(2);
-            break;
-        case GameState::STORM:
-            secondaryLEDs.stopBlinking();
-            secondaryLEDs.setRainLevel(3);
-            break;
-        case GameState::FLOOD:
-            secondaryLEDs.blinkAll(scene.getSewerColor());
-            secondaryLEDs.setRainLevel(0);
-            break;
-        case GameState::CANAL:
-            secondaryLEDs.blinkAll(CRGB(COLOR_MAGENTA));
-            secondaryLEDs.setRainLevel(0);
-            break;
-        case GameState::WIN:
-            secondaryLEDs.blinkAll(CRGB(COLOR_GREEN_1));
-            secondaryLEDs.setRainLevel(0);
-            break;
-        default:
-            secondaryLEDs.stopBlinking();
-            secondaryLEDs.setRainLevel(0);
-            break;
-    }
-
-    // Update GIEP and Basin Gate LEDs
+void GameLogic::updateGIEPAndBasinGateLEDs() {
+    // Update GIEP LEDs
     for (int i = 0; i < 8; i++) {
         SecondaryLEDZone zone;
         switch (i) {
@@ -365,32 +367,19 @@ void GameLogic::updateSecondaryLEDs() {
         }
         secondaryLEDs.setZoneState(zone, buttonStates[i]);
     }
-    secondaryLEDs.setZoneState(SecondaryLEDZone::BASIN_GATE, basinGateOpen);
 
-    // Check if we need to transition back to waiting state after end game
-    unsigned long currentTime = millis();
-    if (currentState == GameState::FLOOD || currentState == GameState::CANAL || currentState == GameState::WIN) {
-        unsigned long stateDuration = currentTime - stateStartTime;
-        if (stateDuration >= END_STATE_DURATION) {
-            resetGame();
+    // Update Basin Gate LED
+    secondaryLEDs.setZoneState(SecondaryLEDZone::BASIN_GATE, basinGateOpen);
+}
+
+void GameLogic::checkEndGameTransition() {
+    if (currentState == GameState::WIN || currentState == GameState::FLOOD || currentState == GameState::CANAL) {
+        unsigned long endStateDuration = millis() - stateStartTime;
+        if (endStateDuration >= END_STATE_DURATION) {
+            DebugLogger::critical("End game state duration exceeded. Transitioning to waiting state.");
+            initializeGameState(); // Reset to initial waiting state
         }
     }
 }
 
-void GameLogic::resetGame() {
-    gameActive = false;
-    sewerLevel = 0;
-    basinLevel = 0;
-    scene.setSewerLevel(sewerLevel);
-    scene.setBasinLevel(basinLevel);
-    scene.setPollutionState(false);
-    for (int i = 0; i < 8; i++) {
-        buttonStates[i] = false;
-        scene.setGIEPState(i, false);
-    }
-    basinGateOpen = false;
-    scene.setBasinGateState(false);
-    secondaryLEDs.stopBlinking(); // Stop any ongoing blinking
-    initializeGameState();
-    DebugLogger::critical("Game reset");
-}
+// ... (keep all remaining existing code)
