@@ -76,13 +76,13 @@ void RainSystem::update(const bool* buildingMap) {
 void RainSystem::draw(CRGB* leds) const {
     if (!isVisible) return;
 
-    uint8_t rainBrightness = RAIN_BRIGHTNESS;
+    uint8_t rainBrightness = std::min(static_cast<uint8_t>(RAIN_BRIGHTNESS), static_cast<uint8_t>(255));
     switch (mode) {
         case RainMode::HEAVY:
-            rainBrightness = RAIN_BRIGHTNESS * 1.5;
+            rainBrightness = std::min(static_cast<uint8_t>(RAIN_BRIGHTNESS * 1.5), static_cast<uint8_t>(255));
             break;
         case RainMode::STORM:
-            rainBrightness = RAIN_BRIGHTNESS * 2;
+            rainBrightness = std::min(static_cast<uint8_t>(RAIN_BRIGHTNESS * 2), static_cast<uint8_t>(255));
             break;
         default:
             break;

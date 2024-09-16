@@ -45,14 +45,15 @@ uint16_t MatrixConfig::XY(uint8_t x, uint8_t y) const {
             i = (y * width) + x;
             break;
         case MatrixOrientation::BOTTOM_LEFT_VERTICAL:
+            // Reverse x to start from bottom-left
             x = (width - 1) - x;
-            if (zigzag && x % 2 == 1) {
+            // If zigzag, alternate the direction of y for odd columns
+            if (zigzag && x % 2 == 0) {
                 y = (height - 1) - y;
             }
             i = (x * height) + y;
             break;
         case MatrixOrientation::BOTTOM_RIGHT_VERTICAL:
-            x = (width - 1) - x;
             y = (height - 1) - y;
             if (zigzag && x % 2 == 1) {
                 y = (height - 1) - y;
