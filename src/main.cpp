@@ -2,23 +2,55 @@
 #include <FastLED.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "DebugLogger.h"
-#include "StateTracker.h"
-#include "MatrixConfig.h"
-#include "Scene.h"
-#include "GameLogic.h"
 #include "config.h"
+#include "game_config.h"
 #include "ButtonHandler.h"
 #include "MCP23017Handler.h"
-#include "SecondaryLEDHandler.h"
+#include "DebugLogger.h"
+#include "../include/array1.h"
+#include "../include/array2.h"
 
 CRGB leds[NUM_LEDS];
-MatrixConfig matrixConfig(MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX_ORIENTATION, true);
-Scene scene(matrixConfig);
-SecondaryLEDHandler secondaryLEDs;
-GameLogic gameLogic(scene, secondaryLEDs);
+CRGB secondaryLeds[TOTAL_SECONDARY_LEDS];
 MCP23017Handler mcpHandler(MCP23017_ADDRESS);
-ButtonHandler buttonHandler(mcpHandler, gameLogic);
+ButtonHandler buttonHandler(mcpHandler);
+
+void handleButtonPress(uint8_t button) {
+    DebugLogger::info("Button %d pressed", button);
+    // Blink the corresponding LED
+    if (button < NUM_MCP_BUTTONS) {
+        // Toggle the LED on
+        mcpHandler.setLED(button, true);
+        vTaskDelay(pdMS_TO_TICKS(DEBUG_BUTTON_BLINK_DURATION));
+        // Toggle the LED off
+        mcpHandler.setLED(button, false);
+    } else if (button == NUM_MCP_BUTTONS) {
+        // Handle 9th button (BUTTON9_PIN)
+        digitalWrite(LED9_PIN, HIGH);
+        vTaskDelay(pdMS_TO_TICKS(DEBUG_BUTTON_BLINK_DURATION));
+        digitalWrite(LED9_PIN, LOW);
+    }
+}
+
+void handleButtonRelease(uint8_t button) {
+    DebugLogger::info("Button %d released", button);
+}
+
+void updateMainLEDs() {
+    // Draw the array1.h bitmap on the main LED matrix
+    for (int i = 0; i < NUM_LEDS; i++) {
+        leds[i] = CRGB(MAIN_LED_BITMAP[i]);
+    }
+    FastLED.show();
+}
+
+void updateSecondaryLEDs() {
+    // Draw the array2.h bitmap on the secondary LED array
+    for (int i = 0; i < TOTAL_SECONDARY_LEDS; i++) {
+        secondaryLeds[i] = CRGB(SECONDARY_LED_BITMAP[i]);
+    }
+    FastLED.show();
+}
 
 void buttonTask(void* parameter) {
     TickType_t lastWakeTime = xTaskGetTickCount();
@@ -26,16 +58,10 @@ void buttonTask(void* parameter) {
 
     while (true) {
         buttonHandler.update();
-        vTaskDelayUntil(&lastWakeTime, frequency);
-    }
-}
-
-void gameUpdateTask(void* parameter) {
-    TickType_t lastWakeTime = xTaskGetTickCount();
-    const TickType_t frequency = pdMS_TO_TICKS(33);  // Update every ~30fps
-
-    while (true) {
-        gameLogic.update();
+        // Check 9th button
+        if (digitalRead(BUTTON9_PIN) == LOW) {
+            handleButtonPress(NUM_MCP_BUTTONS);
+        }
         vTaskDelayUntil(&lastWakeTime, frequency);
     }
 }
@@ -45,10 +71,8 @@ void ledUpdateTask(void* parameter) {
     const TickType_t frequency = pdMS_TO_TICKS(33);  // ~30fps
 
     while (true) {
-        scene.update();
-        scene.draw(leds);
-        FastLED.show();
-        secondaryLEDs.update();
+        updateMainLEDs();
+        updateSecondaryLEDs();
         vTaskDelayUntil(&lastWakeTime, frequency);
     }
 }
@@ -62,36 +86,27 @@ void setup() {
         ; // wait for serial port to connect. Needed for native USB port only
     }
 
-    DebugLogger::init(Serial, LogLevel::CRITICAL);
-    DebugLogger::critical("System initialized");
-
-    pinMode(DEBUG_BUTTON_PIN, INPUT_PULLUP);
-    pinMode(BASIN_GATE_BUTTON_PIN, INPUT_PULLUP);
-    pinMode(BASIN_GATE_LED_PIN, OUTPUT);
+    DebugLogger::init(Serial, LogLevel::INFO);
+    DebugLogger::info("System initializing");
 
     mcpHandler.begin();
-    FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+    buttonHandler.setOnButtonPressedCallback(handleButtonPress);
+    buttonHandler.setOnButtonReleasedCallback(handleButtonRelease);
+
+    // Setup 9th button and LED
+    pinMode(BUTTON9_PIN, INPUT_PULLUP);
+    pinMode(LED9_PIN, OUTPUT);
+
+    FastLED.addLeds<LED_TYPE, MATRIX_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+    FastLED.addLeds<LED_TYPE, SECONDARY_LED_PIN, COLOR_ORDER>(secondaryLeds, TOTAL_SECONDARY_LEDS).setCorrection(TypicalLEDStrip);
     FastLED.setBrightness(BRIGHTNESS);
     FastLED.clear();
     FastLED.show();
-    secondaryLEDs.begin();
-    scene.loadDefaultScene();
 
-    BaseType_t result;
-    result = xTaskCreatePinnedToCore(buttonTask, "ButtonTask", BUTTON_TASK_STACK_SIZE, NULL, BUTTON_TASK_PRIORITY, NULL, 0);
-    if (result != pdPASS) {
-        DebugLogger::critical("Failed to create ButtonTask: %d", result);
-    }
-    result = xTaskCreatePinnedToCore(gameUpdateTask, "GameUpdateTask", GAME_UPDATE_TASK_STACK_SIZE, NULL, GAME_UPDATE_TASK_PRIORITY, NULL, 1);
-    if (result != pdPASS) {
-        DebugLogger::critical("Failed to create GameUpdateTask: %d", result);
-    }
-    result = xTaskCreatePinnedToCore(ledUpdateTask, "LEDUpdateTask", LED_UPDATE_TASK_STACK_SIZE, NULL, LED_UPDATE_TASK_PRIORITY, NULL, 1);
-    if (result != pdPASS) {
-        DebugLogger::critical("Failed to create LEDUpdateTask: %d", result);
-    }
+    xTaskCreatePinnedToCore(buttonTask, "ButtonTask", BUTTON_TASK_STACK_SIZE, NULL, BUTTON_TASK_PRIORITY, NULL, 0);
+    xTaskCreatePinnedToCore(ledUpdateTask, "LEDUpdateTask", LED_UPDATE_TASK_STACK_SIZE, NULL, LED_UPDATE_TASK_PRIORITY, NULL, 1);
 
-    DebugLogger::critical("Setup complete");
+    DebugLogger::info("Setup complete");
 }
 
 void loop() {

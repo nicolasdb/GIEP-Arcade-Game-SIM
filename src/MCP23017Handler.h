@@ -9,6 +9,7 @@ public:
     void begin();
     uint8_t readButtons();
     void setLEDs(uint8_t ledStates);
+    void setLED(uint8_t ledPin, bool state);
 
 private:
     uint8_t _address;

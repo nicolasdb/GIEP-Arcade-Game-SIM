@@ -1,120 +1,67 @@
-# GIEP Arcade Game SIM
+# GIEP Arcade Game Framework
 
-This project is a simulation of an arcade game for GIEP (Green Infrastructure and Educational Program). The game simulates a city's water management system during various rainfall intensities, showcasing the importance of green infrastructure in managing urban water flow.
+This project provides a framework for creating arcade-style games using a custom hardware setup with LED matrices and buttons.
 
-## Features
+## Project Structure
 
-- Main LED matrix display for visualizing the city and water flow
-- Secondary LED array for additional visual feedback
-- Interactive buttons for controlling GIEP devices
-- Simulation of different rainfall intensities and water levels
-- Game states including win and loss conditions
-- Enhanced debugging capabilities
-- Improved error handling and watchdog implementation
+- `src/`: Contains the main source code files
+  - `main.cpp`: Main program logic
+  - `config.h`: Hardware and general configuration
+  - `game_config.h`: Game-specific configuration
+  - Other source files for various components (ButtonHandler, Scene, etc.)
+- `include/`: Header files and additional resources
+  - `array1.h`: Bitmap array for the main LED matrix
+  - `array2.h`: Bitmap array for the secondary LED array
+- `lib/`: External libraries
+- `platformio.ini`: PlatformIO configuration file
 
-## Hardware Components
+## Key Components
 
-- ESP32 microcontroller
-- WS2812B LED matrix (main display)
-- WS2813 LED strip (secondary array)
-- MCP23017 I/O expander for button inputs
-- Various buttons for user interaction
-
-## Software Components
-
-- `main.cpp`: Main program entry point and task management
-- `GameLogic`: Manages the game state and logic
-- `Scene`: Handles the visual representation on the LED matrix
 - `ButtonHandler`: Manages button inputs
-- `MCP23017Handler`: Interfaces with the MCP23017 I/O expander
-- `SecondaryLEDHandler`: Manages the secondary LED array
-- `MatrixConfig`: Configures the LED matrix layout
-- `StateTracker`: Tracks the overall system state
-- `DebugLogger`: Provides logging functionality for debugging
-- `config.h`: Contains hardware-specific configurations
-- `game_config.h`: Contains game-specific configurations for easy adjustment
+- `MCP23017Handler`: Handles communication with the MCP23017 I/O expander
+- `MatrixConfig`: Configures the LED matrix
+- `Scene`: Manages the game scene and rendering
+- `SecondaryLEDHandler`: Controls secondary LED arrays
 
-## Game Mechanics
+## Creating a New Game
 
-1. The game simulates different rainfall intensities: idle, raining, heavy, and storm.
-2. Players can activate GIEP devices using buttons to manage water flow.
-3. Water levels in the sewer and basin are simulated and visualized.
-4. Players can open/close the basin gate to transfer water between the sewer and basin.
-5. The game ends in a win state if the player survives until the end of the storm, or in a loss state if the sewer overflows or the basin pollutes the river.
+1. Update the bitmap arrays in `include/array1.h` and `include/array2.h` with your game-specific LED configurations.
+2. Modify `src/game_config.h` with game-specific settings and parameters.
+3. Implement game logic in the `updateGameLogic()` function in `src/main.cpp`.
+4. Update LED displays in the `updateLEDDisplay()` function in `src/main.cpp`.
+5. Customize button handling in the `handleButtonPress()` and `handleButtonRelease()` functions.
 
-## Game Logic
+## Setup Instructions
 
-The game progresses through the following states:
-
-1. Waiting Phase:
-   - The game cycles between WAITING_RAINING and WAITING_DRY states.
-   - This phase serves as an attract mode to draw players' attention.
-
-2. Active Gameplay:
-   - Starts when a player presses any button during the waiting phase.
-   - Progresses through RAINING, HEAVY, and STORM weather conditions.
-   - Each weather condition has a specific duration and rain intensity.
-
-3. Player Interactions:
-   - Players can activate/deactivate 8 GIEP (Green Infrastructure Element) buttons.
-   - Each active GIEP reduces the rate at which the sewer level increases.
-   - Players can also control a basin gate to transfer water from the sewer to the basin.
-
-4. Water Management:
-   - The sewer level increases with rainfall and decreases with GIEP effects and natural drainage.
-   - The basin level increases when the basin gate is open, transferring water from the sewer.
-   - Players must balance the use of GIEPs and the basin gate to prevent overflow.
-
-5. Win Condition:
-   - Achieved when both sewer and basin levels are below a certain threshold after a storm.
-
-6. Lose Conditions:
-   - FLOOD: Occurs when the sewer level reaches its overflow threshold.
-   - CANAL: Occurs when the basin level reaches its overflow threshold, polluting the river.
-
-7. Game Over:
-   - After a win or lose condition is met, the game displays the result for a set duration.
-   - The game then automatically returns to the waiting phase, ready for the next player.
-
-The game's difficulty progressively increases with each weather state, challenging players to use strategy and quick decision-making to manage the water levels effectively.
-
-## Secondary LED Array
-
-The secondary LED array provides additional visual feedback:
-
-- 8 zones for GIEP device status
-- 1 zone for basin gate status
-- 3 zones for rainfall intensity levels
-- 3 zones for end game states (flood death, pollution death, win)
-
-## Building and Running
-
-1. Ensure you have PlatformIO installed.
+1. Install PlatformIO in your development environment.
 2. Clone this repository.
 3. Open the project in PlatformIO.
-4. Build and upload the project to your ESP32 board.
+4. Connect your hardware setup to your computer.
+5. Build and upload the project to your board using PlatformIO.
 
-## Debugging
+## Building and Flashing
 
-The project now includes enhanced debugging capabilities:
-- Use the `DebugLogger` class to log messages at different levels (ERROR, WARN, INFO, DEBUG).
-- Debug logs can be enabled or disabled using the DEBUG flag in the build configuration.
-- The `config.h` file includes a DEBUG_PRINT macro for conditional debug output.
+1. Open the project in PlatformIO.
+2. Click the "Build" button to compile the project.
+3. Click the "Upload" button to flash the firmware to your board.
 
-## Configuration
+## Customizing LED Configurations
 
-- Hardware-specific configurations are located in `config.h`.
-- Game-specific parameters (e.g., timing, water levels, rain intensities) are now separated into `game_config.h` for easier adjustment.
-
-## Failsafe Mechanisms
-
-- Watchdog timer implementation to detect and recover from system hangs.
-- Improved error handling in task creation and hardware initialization.
+- Edit `include/array1.h` to change the main LED matrix configuration.
+- Edit `include/array2.h` to change the secondary LED array configuration.
+- Use the GIMP image editor and the h2array.py script to generate new bitmap arrays.
 
 ## Contributing
 
-Contributions to improve the game or add new features are welcome. Please submit a pull request with your changes.
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix.
+3. Make your changes and commit them with clear, concise commit messages.
+4. Push your changes and create a pull request.
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+[Specify your license here]
+
+## Contact
+
+[Your contact information or project maintainer's contact]
