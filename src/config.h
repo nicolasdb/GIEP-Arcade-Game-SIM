@@ -11,16 +11,19 @@
 #define MCP_SCL_PIN 15
 
 // Button release delay (in milliseconds)
-#define BUTTON_RELEASE_DELAY 1000
+#define BUTTON_RELEASE_DELAY 5000
 
 // Colors
 #define COLOR_BLUE 0x0000c7
 #define COLOR_YELLOW 0xffff00
 #define COLOR_WHITE 0xffffff
+#define COLOR_YELLOW_TINTED_WHITE 0xffffa0  // New color for yellow-tinted white
 
 // Brightness levels
 #define BRIGHTNESS_ACTIVE_WHITE 200
-#define BRIGHTNESS_INACTIVE_WHITE 5
+#define BRIGHTNESS_INACTIVE_WHITE 50
+#define BRIGHTNESS_ACTIVE_YELLOW_TINTED_WHITE 200  // New setting for active yellow-tinted white
+#define BRIGHTNESS_INACTIVE_YELLOW_TINTED_WHITE 50  // New setting for inactive yellow-tinted white
 #define BRIGHTNESS_ACTIVE_BLUE 200
 #define BRIGHTNESS_INACTIVE_BLUE 5
 #define BRIGHTNESS_ACTIVE_YELLOW 200
