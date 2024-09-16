@@ -13,7 +13,6 @@
 CRGB leds[NUM_LEDS];
 CRGB secondaryLeds[TOTAL_SECONDARY_LEDS];
 MCP23017Handler mcpHandler(MCP23017_ADDRESS);
-ButtonHandler buttonHandler(mcpHandler);
 
 void handleButtonPress(uint8_t button) {
     DebugLogger::info("Button %d pressed", button);
@@ -57,11 +56,18 @@ void buttonTask(void* parameter) {
     const TickType_t frequency = pdMS_TO_TICKS(10);  // Check every 10ms
 
     while (true) {
-        buttonHandler.update();
-        // Check 9th button
+        // Check each button on the MCP23017
+        for (int i = 0; i < NUM_MCP_BUTTONS; i++) {
+            if (mcpHandler.readButton(i)) {
+                handleButtonPress(i);
+            }
+        }
+
+        // Check the 9th button (BUTTON9_PIN)
         if (digitalRead(BUTTON9_PIN) == LOW) {
             handleButtonPress(NUM_MCP_BUTTONS);
         }
+
         vTaskDelayUntil(&lastWakeTime, frequency);
     }
 }
@@ -90,8 +96,6 @@ void setup() {
     DebugLogger::info("System initializing");
 
     mcpHandler.begin();
-    buttonHandler.setOnButtonPressedCallback(handleButtonPress);
-    buttonHandler.setOnButtonReleasedCallback(handleButtonRelease);
 
     // Setup 9th button and LED
     pinMode(BUTTON9_PIN, INPUT_PULLUP);

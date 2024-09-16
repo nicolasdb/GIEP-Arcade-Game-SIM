@@ -2,14 +2,14 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include "config.h"
 
 class MCP23017Handler {
 public:
     MCP23017Handler(uint8_t address = 0x20);
     void begin();
-    uint8_t readButtons();
-    void setLEDs(uint8_t ledStates);
-    void setLED(uint8_t ledPin, bool state);
+    bool readButton(uint8_t buttonIndex);
+    void setLED(uint8_t ledIndex, bool state);
 
 private:
     uint8_t _address;
