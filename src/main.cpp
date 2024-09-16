@@ -2,99 +2,57 @@
 #include <FastLED.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "DebugLogger.h"
-#include "StateTracker.h"
 #include "MatrixConfig.h"
-#include "Scene.h"
-#include "GameLogic.h"
-#include "config.h"
-#include "ButtonHandler.h"
-#include "MCP23017Handler.h"
 #include "SecondaryLEDHandler.h"
+#include "ButtonHandler.h"
+#include "config.h"
 
-CRGB leds[NUM_LEDS];
-MatrixConfig matrixConfig(MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX_ORIENTATION, true);
-Scene scene(matrixConfig);
-SecondaryLEDHandler secondaryLEDs;
-GameLogic gameLogic(scene, secondaryLEDs);
-MCP23017Handler mcpHandler(MCP23017_ADDRESS);
-ButtonHandler buttonHandler(mcpHandler, gameLogic);
+unsigned long lastButtonReleaseTime = 0;
 
-void buttonTask(void* parameter) {
-    TickType_t lastWakeTime = xTaskGetTickCount();
-    const TickType_t frequency = pdMS_TO_TICKS(10);  // Check every 10ms
-
-    while (true) {
-        buttonHandler.update();
-        vTaskDelayUntil(&lastWakeTime, frequency);
+void buttonTask(void *pvParameters) {
+    for (;;) {
+        ButtonHandler::checkButtons();
+        if (!ButtonHandler::isButton1Pressed() && !ButtonHandler::isButton2Pressed()) {
+            lastButtonReleaseTime = millis();
+        }
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 
-void gameUpdateTask(void* parameter) {
-    TickType_t lastWakeTime = xTaskGetTickCount();
-    const TickType_t frequency = pdMS_TO_TICKS(33);  // Update every ~30fps
-
-    while (true) {
-        gameLogic.update();
-        vTaskDelayUntil(&lastWakeTime, frequency);
-    }
-}
-
-void ledUpdateTask(void* parameter) {
-    TickType_t lastWakeTime = xTaskGetTickCount();
-    const TickType_t frequency = pdMS_TO_TICKS(33);  // ~30fps
-
-    while (true) {
-        scene.update();
-        scene.draw(leds);
-        FastLED.show();
-        secondaryLEDs.update();
-        vTaskDelayUntil(&lastWakeTime, frequency);
+void displayTask(void *pvParameters) {
+    for (;;) {
+        if (ButtonHandler::isButton1Pressed()) {
+            MatrixConfig::setAllPixels(CRGB(COLOR_BRIGHT_WHITE));
+            SecondaryLEDHandler::setAllPixels(CRGB(COLOR_BRIGHT_WHITE));
+        } else if (ButtonHandler::isButton2Pressed()) {
+            MatrixConfig::setAllPixels(CRGB(COLOR_BRIGHT_WHITE));
+            SecondaryLEDHandler::setAllPixels(CRGB(COLOR_BRIGHT_WHITE));
+        } else if (millis() - lastButtonReleaseTime > BUTTON_RELEASE_DELAY) {
+            MatrixConfig::clearMatrix();
+            SecondaryLEDHandler::clearLEDs();
+        } else {
+            if (lastButtonReleaseTime > 0 && millis() - lastButtonReleaseTime <= BUTTON_RELEASE_DELAY) {
+                CRGB color = ButtonHandler::isButton1Pressed() ? CRGB(COLOR_BLUE) : CRGB(COLOR_BLUE) | CRGB(COLOR_YELLOW);
+                MatrixConfig::setAllPixels(color);
+                SecondaryLEDHandler::setAllPixels(color);
+            }
+        }
+        
+        MatrixConfig::updateMatrix();
+        SecondaryLEDHandler::updateLEDs();
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 
 void setup() {
-    Serial.begin(115200);
-    
-    // Wait for serial or timeout after 3 seconds
-    unsigned long startTime = millis();
-    while (!Serial && millis() - startTime < 3000) {
-        ; // wait for serial port to connect. Needed for native USB port only
-    }
+    MatrixConfig::initialize();
+    SecondaryLEDHandler::initialize();
+    ButtonHandler::initialize();
 
-    DebugLogger::init(Serial, LogLevel::CRITICAL);
-    DebugLogger::critical("System initialized");
-
-    pinMode(DEBUG_BUTTON_PIN, INPUT_PULLUP);
-    pinMode(BASIN_GATE_BUTTON_PIN, INPUT_PULLUP);
-    pinMode(BASIN_GATE_LED_PIN, OUTPUT);
-
-    mcpHandler.begin();
-    FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setBrightness(BRIGHTNESS);
-    FastLED.clear();
-    FastLED.show();
-    secondaryLEDs.begin();
-    scene.loadDefaultScene();
-
-    BaseType_t result;
-    result = xTaskCreatePinnedToCore(buttonTask, "ButtonTask", BUTTON_TASK_STACK_SIZE, NULL, BUTTON_TASK_PRIORITY, NULL, 0);
-    if (result != pdPASS) {
-        DebugLogger::critical("Failed to create ButtonTask: %d", result);
-    }
-    result = xTaskCreatePinnedToCore(gameUpdateTask, "GameUpdateTask", GAME_UPDATE_TASK_STACK_SIZE, NULL, GAME_UPDATE_TASK_PRIORITY, NULL, 1);
-    if (result != pdPASS) {
-        DebugLogger::critical("Failed to create GameUpdateTask: %d", result);
-    }
-    result = xTaskCreatePinnedToCore(ledUpdateTask, "LEDUpdateTask", LED_UPDATE_TASK_STACK_SIZE, NULL, LED_UPDATE_TASK_PRIORITY, NULL, 1);
-    if (result != pdPASS) {
-        DebugLogger::critical("Failed to create LEDUpdateTask: %d", result);
-    }
-
-    DebugLogger::critical("Setup complete");
+    xTaskCreatePinnedToCore(buttonTask, "ButtonTask", 2048, NULL, 1, NULL, 0);
+    xTaskCreatePinnedToCore(displayTask, "DisplayTask", 2048, NULL, 1, NULL, 1);
 }
 
 void loop() {
-    // Empty, as tasks are handling everything
-    vTaskDelay(pdMS_TO_TICKS(1000));  // Delay for 1 second
+    // Empty. Tasks are handled by FreeRTOS
 }
