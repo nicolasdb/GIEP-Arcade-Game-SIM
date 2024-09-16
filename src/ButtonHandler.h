@@ -6,7 +6,7 @@
 
 class ButtonHandler {
 public:
-    static const uint8_t NUM_MCP_BUTTONS = MCP23017Handler::NUM_MCP_BUTTONS;
+    static const uint8_t NUM_MCP_BUTTONS = NUM_MCP_BUTTONS;
 
     typedef void (*ButtonCallback)(uint8_t button);
 

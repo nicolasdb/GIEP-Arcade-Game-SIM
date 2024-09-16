@@ -1,6 +1,7 @@
 #include "ButtonHandler.h"
 #include "DebugLogger.h"
 #include "config.h"
+#include "MCP23017Handler.h"
 
 ButtonHandler::ButtonHandler(MCP23017Handler& mcpHandler)
     : _mcpHandler(mcpHandler), _lastMcpStates(0), _mcpButtonStates(0),
@@ -26,14 +27,14 @@ void ButtonHandler::update() {
 }
 
 void ButtonHandler::updateMcpButtons(uint32_t now) {
-    uint8_t currentStates = _mcpHandler.readButtons();
     for (int i = 0; i < NUM_MCP_BUTTONS; i++) {
-        if ((currentStates & (1 << i)) != (_lastMcpStates & (1 << i))) {
+        bool currentState = _mcpHandler.readButton(i);
+        if (currentState != (_lastMcpStates & (1 << i))) {
             _lastMcpDebounceTime[i] = now;
         }
 
         if ((now - _lastMcpDebounceTime[i]) > DEBOUNCE_DELAY) {
-            if ((currentStates & (1 << i)) != (_mcpButtonStates & (1 << i))) {
+            if (currentState != (_mcpButtonStates & (1 << i))) {
                 _mcpButtonStates ^= (1 << i);
                 if (_mcpButtonStates & (1 << i)) {
                     onButtonPressed(i);
@@ -43,7 +44,7 @@ void ButtonHandler::updateMcpButtons(uint32_t now) {
             }
         }
     }
-    _lastMcpStates = currentStates;
+    _lastMcpStates = _mcpButtonStates;
 }
 
 void ButtonHandler::updateButton9(uint32_t now) {
