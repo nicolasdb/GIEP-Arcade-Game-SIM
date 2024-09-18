@@ -134,7 +134,7 @@ void Scene::draw(CRGB* leds) const {
     rainSystem.draw(leds);
 
     // Draw sewer level
-    drawWaterLevel(leds, sewerShape, sewerLevel, CRGB(SEWER_BRIGHTNESS, SEWER_BRIGHTNESS, 0), CRGB(SEWER_EMPTY_BRIGHTNESS, SEWER_EMPTY_BRIGHTNESS, 0));
+    drawWaterLevel(leds, sewerShape, sewerLevel, CRGB(SEWER_BRIGHTNESS, SEWER_BRIGHTNESS, 0), SEWER_EMPTY_COLOR);
 
     // Draw basin level
     drawWaterLevel(leds, basinShape, basinLevel, CRGB(0, 0, BASIN_BRIGHTNESS), CRGB(0, 0, BASIN_EMPTY_BRIGHTNESS));
