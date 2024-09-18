@@ -31,7 +31,8 @@ public:
     void setZoneState(SecondaryLEDZone zone, bool state);
     void setRainLevel(uint8_t level);
     void setEndGameState(SecondaryLEDZone state);
-    static const char* getZoneName(SecondaryLEDZone zone);  // Added declaration
+    static const char* getZoneName(SecondaryLEDZone zone);
+    void setFloodZoneColor(uint8_t r, uint8_t g, uint8_t b);  // New method
 
 private:
     CRGB leds[TOTAL_SECONDARY_LEDS];
@@ -39,6 +40,7 @@ private:
     SecondaryLEDZone endGameState;
     uint8_t rainLevel;
     unsigned long lastBlinkTime;
+    CRGB floodZoneColor;  // New member variable
 
     void updateNormalState();
     void updateEndGameState();

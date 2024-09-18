@@ -43,7 +43,6 @@ private:
     void updateRainIntensity();
     void handleGIEPEffects();
     void handleBasinGate();
-    void resetGame(); 
     void updateWeatherCycle();  
     void handleGIEPButton(uint8_t buttonIndex, bool isPressed);
     void updateSecondaryLEDs();
@@ -53,5 +52,6 @@ private:
     void endGame(GameState endState);
     void updateGIEPAndBasinGateLEDs();
     void checkEndGameTransition();
-    void handleWinStateButtonPress(uint8_t buttonIndex); // Add this line
+    void resetGameElements();
+    void handleWinStateButtonPress(uint8_t buttonIndex);
 };

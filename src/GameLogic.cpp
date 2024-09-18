@@ -286,12 +286,16 @@ void GameLogic::checkForStateTransition() {
         endGame(GameState::CANAL);
     } else if (currentState == GameState::STORM) {
         unsigned long stormDuration = millis() - stateStartTime;
-        if (sewerLevel <= WIN_THRESHOLD && basinLevel <= WIN_THRESHOLD) {
-            DebugLogger::critical("Win condition met during STORM. Ending game with WIN state.");
-            endGame(GameState::WIN);
-        } else if (stormDuration >= STORM_DURATION) {
-            DebugLogger::critical("STORM duration ended. Transitioning to RAINING state.");
-            transitionState(GameState::RAINING);
+        if (stormDuration >= STORM_DURATION) {
+            if (sewerLevel <= WIN_THRESHOLD && basinLevel <= WIN_THRESHOLD) {
+                DebugLogger::critical("Win condition met at the end of STORM. Ending game with WIN state.");
+                endGame(GameState::WIN);
+            } else {
+                DebugLogger::critical("STORM duration ended. Transitioning to RAINING state.");
+                transitionState(GameState::RAINING);
+            }
+        } else {
+            DebugLogger::debug("STORM in progress. Duration: %lu / %lu", stormDuration, STORM_DURATION);
         }
     }
 }
@@ -304,13 +308,18 @@ void GameLogic::endGame(GameState endState) {
     if (endState == GameState::CANAL) {
         scene.setPollutionState(true);
     }
+    if (endState == GameState::FLOOD) {
+        sewerLevel = 1.0f;  // Set sewer level to maximum
+        scene.setSewerLevel(sewerLevel);  // Update the scene with the new sewer level
+        scene.setFloodState(true);  // Set the flood state in the Scene
+        DebugLogger::critical("FLOOD state set. Sewer level set to maximum: %.2f", sewerLevel);
+    }
     if (endState == GameState::WIN) {
         DebugLogger::critical("WIN state set. Updating secondary LEDs for WIN state.");
     }
     updateSecondaryLEDs();  // Update LEDs immediately after changing state
+    resetGameElements();  // Reset game elements when ending the game
 }
-
-// ... (keep all remaining code)
 
 void GameLogic::updateSecondaryLEDs() {
     // Handle endgame states
@@ -321,6 +330,7 @@ void GameLogic::updateSecondaryLEDs() {
         updateGIEPAndBasinGateLEDs();
     } else if (currentState == GameState::FLOOD) {
         secondaryLEDs.setEndGameState(SecondaryLEDZone::FLOOD_DEATH);
+        secondaryLEDs.setFloodZoneColor(255, 0, 0);  // Set flood zone color to red
     } else if (currentState == GameState::CANAL) {
         secondaryLEDs.setEndGameState(SecondaryLEDZone::POLLUTION_DEATH);
     } else {
@@ -348,6 +358,35 @@ void GameLogic::updateSecondaryLEDs() {
 
     // Check if we need to transition back to waiting state after end game
     checkEndGameTransition();
+}
+
+void GameLogic::resetGameElements() {
+    sewerLevel = 0;
+    basinLevel = 0;
+    scene.setSewerLevel(sewerLevel);
+    scene.setBasinLevel(basinLevel);
+    scene.setPollutionState(false);
+    scene.setFloodState(false);  // Reset flood state
+    scene.setRainVisible(true);
+    scene.setRainIntensity(RAIN_INTENSITY_RAINING);
+    basinGateOpen = false;
+    scene.setBasinGateState(false);
+    
+    // Reset all GIEP buttons
+    for (int i = 0; i < 8; i++) {
+        buttonStates[i] = false;
+        scene.setGIEPState(i, false);
+    }
+    
+    // Update secondary LEDs
+    secondaryLEDs.setRainLevel(1);  // Set to initial rain level
+    secondaryLEDs.setZoneState(SecondaryLEDZone::BASIN_GATE, false);
+    for (int i = 0; i < 8; i++) {
+        SecondaryLEDZone zone = static_cast<SecondaryLEDZone>(static_cast<int>(SecondaryLEDZone::GIEP_1) + i);
+        secondaryLEDs.setZoneState(zone, false);
+    }
+    
+    DebugLogger::critical("Game elements reset completed");
 }
 
 void GameLogic::updateGIEPAndBasinGateLEDs() {
@@ -378,8 +417,7 @@ void GameLogic::checkEndGameTransition() {
         if (endStateDuration >= END_STATE_DURATION) {
             DebugLogger::critical("End game state duration exceeded. Transitioning to waiting state.");
             initializeGameState(); // Reset to initial waiting state
+            resetGameElements();   // Ensure all game elements are reset
         }
     }
 }
-
-// ... (keep all remaining existing code)

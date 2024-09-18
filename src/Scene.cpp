@@ -2,10 +2,11 @@
 #include "config.h"
 #include <stack>
 
+
 Scene::Scene(const MatrixConfig& config)
     : matrixConfig(config), width(config.getWidth()), height(config.getHeight()),
       sewerLevel(0), basinLevel(0), basinGateActive(false), isBasinOverflow(false),
-      riverFlowOffset(0), isPolluted(false), rainSystem(config) {
+      riverFlowOffset(0), isPolluted(false), isFloodState(false), rainSystem(config) {
     initializePixelMap();
     initializeBuildingMap();
     memset(giepStates, 0, sizeof(giepStates));
@@ -14,6 +15,11 @@ Scene::Scene(const MatrixConfig& config)
 Scene::~Scene() {
     cleanupPixelMap();
     cleanupBuildingMap();
+}
+
+void Scene::setFloodState(bool state) {
+    isFloodState = state;
+    DebugLogger::info("Flood state set to: %d", state);
 }
 
 void Scene::loadBitmap(const uint32_t* bitmap, uint8_t bitmapWidth, uint8_t bitmapHeight) {
@@ -134,22 +140,30 @@ void Scene::draw(CRGB* leds) const {
     rainSystem.draw(leds);
 
     // Draw sewer level
-    drawWaterLevel(leds, sewerShape, sewerLevel, CRGB(SEWER_BRIGHTNESS, SEWER_BRIGHTNESS, 0), SEWER_EMPTY_COLOR);
+    if (isFloodState) {
+        // Show full shape of sewer pixels during flood state
+        for (const auto& point : sewerShape) {
+            uint16_t index = matrixConfig.XY(point.x, point.y);
+            leds[index] = CRGB(SEWER_BRIGHTNESS, SEWER_BRIGHTNESS, 0);
+        }
+    } else {
+        drawWaterLevel(leds, sewerShape, sewerLevel, SEWER_COLOR, SEWER_EMPTY_COLOR);
+    }
 
     // Draw basin level
-    drawWaterLevel(leds, basinShape, basinLevel, CRGB(0, 0, BASIN_BRIGHTNESS), CRGB(0, 0, BASIN_EMPTY_BRIGHTNESS));
+    drawWaterLevel(leds, basinShape, basinLevel, BASIN_COLOR, BASIN_EMPTY_COLOR);
     
     // Draw basin gate
     for (const auto& point : basinGateShape) {
         uint16_t index = matrixConfig.XY(point.x, point.y);
-        leds[index] = basinGateActive ? CRGB(BASIN_GATE_BRIGHTNESS, 0, 0) : CRGB(BASIN_GATE_INACTIVE_BRIGHTNESS, 0, 0);
+        leds[index] = basinGateActive ? BASIN_GATE_COLOR : CRGB(BASIN_GATE_INACTIVE_BRIGHTNESS, 0, 0);
     }
 
     // Draw basin overflow and river
     if (isBasinOverflow) {
         for (const auto& point : basinOverflowShape) {
             uint16_t index = matrixConfig.XY(point.x, point.y);
-            leds[index] = CRGB(BASIN_OVERFLOW_BRIGHTNESS, 0, BASIN_OVERFLOW_BRIGHTNESS);
+            leds[index] = BASIN_OVERFLOW_COLOR;
         }
     }
 

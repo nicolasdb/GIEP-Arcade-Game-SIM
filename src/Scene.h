@@ -56,6 +56,7 @@ public:
     CRGB getSewerColor() const;
     void setPollutionState(bool polluted);
     const bool* getBuildingMap() const;
+    void setFloodState(bool state);  // New method
 
 private:
     const MatrixConfig& matrixConfig;
@@ -75,6 +76,7 @@ private:
     std::vector<Point> riverShape;
     uint8_t riverFlowOffset;
     bool isPolluted;
+    bool isFloodState;  // New member variable
     RainSystem rainSystem;
 
     void initializePixelMap();
