@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
-const uint32_t BITMAP[56] = {
+// secondary matrix
+const uint32_t array2[56] = {
     0x00FF00, 0x00FF00, 0x00FF00, 0x00FF00, 
     0x00E300, 0x00E300, 0x00E300, 0x00E300, 
     0x00C700, 0x00C700, 0x00C700, 0x00C700, 
