@@ -65,24 +65,41 @@ void GameLogic::updateWaitingMode() {
 }
 
 void GameLogic::handleButton(uint8_t buttonIndex, bool isPressed) {
+    DebugLogger::debug("Button %d %s", buttonIndex, isPressed ? "pressed" : "released");
+
     // Ignore button presses in all end game states
     if (currentState == GameState::WIN || currentState == GameState::FLOOD || currentState == GameState::CANAL) {
         return;
     }
 
-    if (!gameActive && isPressed) {
-        startGame();
+    // Handle button presses during waiting states
+    if (currentState == GameState::WAITING_RAINING || currentState == GameState::WAITING_DRY) {
+        if (isPressed) {
+            if (buttonIndex < 8) {  // GIEP buttons
+                handleGIEPButton(buttonIndex, isPressed);
+                scene.setGIEPState(buttonIndex, isPressed);
+            } else if (buttonIndex == 8) {  // Basin gate button
+                handleBasinGateButton(isPressed);
+                scene.setBasinGateState(isPressed);
+            }
+            updateGIEPAndBasinGateLEDs();
+            startGame();
+        }
         return;
     }
 
-    if (buttonIndex < 8) {  // GIEP buttons
-        handleGIEPButton(buttonIndex, isPressed);
-    } else if (buttonIndex == 8) {  // Basin gate button
-        handleBasinGateButton(isPressed);
+    // Handle button presses during active game
+    if (gameActive) {
+        if (buttonIndex < 8) {  // GIEP buttons
+            handleGIEPButton(buttonIndex, isPressed);
+        } else if (buttonIndex == 8) {  // Basin gate button
+            handleBasinGateButton(isPressed);
+        }
     }
 }
 
 void GameLogic::startGame() {
+    DebugLogger::critical("Starting the game");
     gameActive = true;
     sewerLevel = 0;
     basinLevel = 0;
@@ -93,7 +110,8 @@ void GameLogic::startGame() {
     stateStartTime = millis();
     scene.setRainVisible(true);
     scene.setRainIntensity(RAIN_INTENSITY_RAINING);
-    DebugLogger::critical("Game started");
+    updateSecondaryLEDs();
+    DebugLogger::critical("Game started. Initial state: %s", getStateString());
 }
 
 void GameLogic::handleGIEPButton(uint8_t buttonIndex, bool isPressed) {
