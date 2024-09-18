@@ -37,7 +37,7 @@ void displayTask(void *pvParameters) {
             SecondaryLEDHandler::activateBluePixels();
         } else if (ButtonHandler::isButton2Pressed()) {
             MatrixConfig::activateBlueAndYellowPixels();
-            SecondaryLEDHandler::activateBlueAndYellowPixels();
+            SecondaryLEDHandler::activateYellowPixels();
         } else if (millis() - lastButtonReleaseTime > BUTTON_RELEASE_DELAY) {
             MatrixConfig::deactivateAllPixels();
             SecondaryLEDHandler::deactivateAllPixels();
@@ -51,7 +51,7 @@ void displayTask(void *pvParameters) {
 
 void setup() {
     // Initialize MatrixConfig with 25x25 size, BOTTOM_LEFT_VERTICAL orientation, and zigzag mode
-    MatrixConfig::initialize(25, 25, MatrixOrientation::BOTTOM_LEFT_VERTICAL, true);
+    MatrixConfig::initialize(25, 25, MatrixOrientation::TOP_RIGHT_VERTICAL, true);
 
     // Initialize SecondaryLEDHandler with 56 LEDs (4x14 array)
     SecondaryLEDHandler::initialize(56);

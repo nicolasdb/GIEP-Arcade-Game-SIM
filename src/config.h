@@ -1,8 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// Define ESP32 for FastLED
-#define FASTLED_ESP32_I2S true
 
 // Hardware configuration
 #define MATRIX_DATA_PIN 9

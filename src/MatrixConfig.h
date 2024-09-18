@@ -11,7 +11,8 @@ enum class MatrixOrientation {
     TOP_LEFT_VERTICAL,
     BOTTOM_LEFT_HORIZONTAL,
     BOTTOM_LEFT_VERTICAL,
-    BOTTOM_RIGHT_VERTICAL 
+    BOTTOM_RIGHT_VERTICAL,
+    TOP_RIGHT_VERTICAL  // Added new orientation
 };
 
 class MatrixConfig {

@@ -137,6 +137,21 @@ uint16_t MatrixConfig::XY(uint8_t x, uint8_t y) {
             }
             break;
         
+        case MatrixOrientation::TOP_RIGHT_VERTICAL:
+            if (zigzag) {
+                if (x & 0x01) {
+                    // Odd columns run top to bottom
+                    i = ((width - 1 - x) * height) + (height - 1 - y);
+                } else {
+                    // Even columns run bottom to top
+                    i = ((width - 1 - x) * height) + y;
+                }
+            } else {
+                // Non-zigzag pattern
+                i = ((width - 1 - x) * height) + y;
+            }
+            break;
+        
         // Add cases for other orientations if needed
         
         default:
@@ -153,6 +168,7 @@ const char* MatrixConfig::orientationToString(MatrixOrientation o) {
         case MatrixOrientation::BOTTOM_LEFT_HORIZONTAL: return "BOTTOM_LEFT_HORIZONTAL";
         case MatrixOrientation::BOTTOM_LEFT_VERTICAL: return "BOTTOM_LEFT_VERTICAL";
         case MatrixOrientation::BOTTOM_RIGHT_VERTICAL: return "BOTTOM_RIGHT_VERTICAL";
+        case MatrixOrientation::TOP_RIGHT_VERTICAL: return "TOP_RIGHT_VERTICAL";
         default: return "UNKNOWN";
     }
 }

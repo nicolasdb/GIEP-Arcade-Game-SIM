@@ -62,7 +62,7 @@ bool SecondaryLEDHandler::isYellowPixel(uint16_t index) {
 void SecondaryLEDHandler::activateBluePixels() {
     for (uint16_t i = 0; i < numLeds; i++) {
         if (isBluePixel(i)) {
-            setPixel(i, CRGB(COLOR_WHITE), BRIGHTNESS_ACTIVE_WHITE);
+            setPixel(i, CRGB(COLOR_BLUE), 60);
             isActivePixel[i] = true;
         }
     }
@@ -71,16 +71,7 @@ void SecondaryLEDHandler::activateBluePixels() {
 void SecondaryLEDHandler::activateYellowPixels() {
     for (uint16_t i = 0; i < numLeds; i++) {
         if (isYellowPixel(i)) {
-            setPixel(i, CRGB(COLOR_WHITE), BRIGHTNESS_ACTIVE_WHITE);
-            isActivePixel[i] = true;
-        }
-    }
-}
-
-void SecondaryLEDHandler::activateBlueAndYellowPixels() {
-    for (uint16_t i = 0; i < numLeds; i++) {
-        if (isBluePixel(i) || isYellowPixel(i)) {
-            setPixel(i, CRGB(COLOR_WHITE), BRIGHTNESS_ACTIVE_WHITE);
+            setPixel(i, CRGB(COLOR_YELLOW), 60);
             isActivePixel[i] = true;
         }
     }
