@@ -6,18 +6,18 @@ namespace GameConfig {
         constexpr uint32_t WAITING_RAINING_DURATION = 10000;
         constexpr uint32_t WAITING_DRY_DURATION = 10000;
         constexpr uint32_t RAINING_DURATION = 10000;
-        constexpr uint32_t HEAVY_DURATION = 20000;
-        constexpr uint32_t STORM_DURATION = 25000;
+        constexpr uint32_t HEAVY_DURATION = 15000;
+        constexpr uint32_t STORM_DURATION = 15000;
         constexpr uint32_t END_STATE_DURATION = 5000;
     }
 
     namespace SewerMechanics {
-        constexpr float SEWER_INCREASE_RATE_RAINING = 0.002f;
-        constexpr float SEWER_INCREASE_RATE_HEAVY = 0.004f;
-        constexpr float SEWER_INCREASE_RATE_STORM = 0.006f;
-        constexpr float GIEP_EFFECT_STRENGTH = 0.003f;
-        constexpr float SEWER_DRAIN_RATE = 0.001f;
-        constexpr float BASIN_GATE_TRANSFER_RATE = 0.005f;
+        constexpr float SEWER_INCREASE_RATE_RAINING = 0.013f;
+        constexpr float SEWER_INCREASE_RATE_HEAVY = 0.02f;
+        constexpr float SEWER_INCREASE_RATE_STORM = 0.025f;
+        constexpr float GIEP_EFFECT_STRENGTH = 0.0045f;
+        constexpr float SEWER_DRAIN_RATE = 0.01f;
+        constexpr float BASIN_GATE_TRANSFER_RATE = 0.007f;
     }
 
     namespace GameBalance {
@@ -28,12 +28,12 @@ namespace GameConfig {
 
     namespace RainVisuals {
         constexpr float RAIN_INTENSITY_RAINING = 0.005f;
-        constexpr float RAIN_INTENSITY_HEAVY = 0.02f;
-        constexpr float RAIN_INTENSITY_STORM = 0.04f;
-        constexpr uint8_t RAIN_MAX_TRAIL_LENGTH = 2;
-        constexpr float RAIN_HEAVY_MULTIPLIER = 5.0f;
-        constexpr float RAIN_STORM_MULTIPLIER = 10.0f;
-        constexpr uint8_t RAIN_STORM_WIND_CHANCE = 230; // 90% chance (out of 255)
+        constexpr float RAIN_INTENSITY_HEAVY = 0.03f;
+        constexpr float RAIN_INTENSITY_STORM = 0.10f;
+        constexpr uint8_t RAIN_MAX_TRAIL_LENGTH = 4;
+        constexpr float RAIN_HEAVY_MULTIPLIER = 10.0f;
+        constexpr float RAIN_STORM_MULTIPLIER = 30.0f;
+        constexpr uint8_t RAIN_STORM_WIND_CHANCE = 10; // 90% chance (out of 255)
     }
 
     namespace Brightness {
