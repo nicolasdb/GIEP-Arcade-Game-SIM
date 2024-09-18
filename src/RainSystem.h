@@ -2,8 +2,10 @@
 
 #include <Arduino.h>
 #include <FastLED.h>
+#include <array>
 #include "MatrixConfig.h"
 #include "game_config.h"
+#include "config.h"
 
 enum class RainMode {
     NORMAL,
@@ -19,7 +21,6 @@ struct RainDrop {
 class RainSystem {
 public:
     RainSystem(const MatrixConfig& config);
-    ~RainSystem();
 
     void update(const bool* buildingMap);
     void draw(CRGB* leds) const;
@@ -29,8 +30,14 @@ public:
     void setMode(RainMode mode);
 
 private:
+    static constexpr uint8_t RAIN_MAX_TRAIL_LENGTH = 4;
+    static constexpr float RAIN_HEAVY_MULTIPLIER = 1.5f;
+    static constexpr float RAIN_STORM_MULTIPLIER = 2.0f;
+    static constexpr uint8_t RAIN_STORM_WIND_CHANCE = 64; // 25% chance
+    static constexpr uint8_t RAIN_BRIGHTNESS = 64;
+
     const MatrixConfig& matrixConfig;
-    RainDrop* rainDrops;
+    std::array<RainDrop, MATRIX_WIDTH> rainDrops;
     uint8_t width;
     uint8_t height;
     float intensity;
@@ -38,5 +45,4 @@ private:
     RainMode mode;
 
     void initializeRain();
-    void cleanupRain();
 };

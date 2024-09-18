@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include <array>
 #include "DebugLogger.h"
 #include "GameLogic.h"
 #include "MCP23017Handler.h"
@@ -7,7 +8,7 @@
 
 class ButtonHandler {
 public:
-    static const uint8_t DEBOUNCE_DELAY = 60; // milliseconds
+    static constexpr uint8_t DEBOUNCE_DELAY = 60; // milliseconds
 
     ButtonHandler(MCP23017Handler& mcpHandler, GameLogic& gameLogic);
     void update();
@@ -17,7 +18,7 @@ private:
     GameLogic& _gameLogic;
     uint8_t _lastMcpStates;
     uint8_t _mcpButtonStates;
-    uint32_t _lastMcpDebounceTime[NUM_MCP_BUTTONS];
+    std::array<uint32_t, NUM_MCP_BUTTONS> _lastMcpDebounceTime;
     uint8_t _lastBasinGateState;
     uint8_t _basinGateButtonState;
     uint32_t _lastBasinGateDebounceTime;

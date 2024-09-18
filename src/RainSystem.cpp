@@ -1,25 +1,18 @@
 #include "RainSystem.h"
 #include <algorithm>
 
+using namespace GameConfig;
+
 RainSystem::RainSystem(const MatrixConfig& config)
     : matrixConfig(config), width(config.getWidth()), height(config.getHeight()),
       intensity(0), isVisible(true), mode(RainMode::NORMAL) {
     initializeRain();
 }
 
-RainSystem::~RainSystem() {
-    cleanupRain();
-}
-
 void RainSystem::initializeRain() {
-    rainDrops = new RainDrop[width];
     for (uint8_t x = 0; x < width; x++) {
         rainDrops[x] = {height, 0}; // Start with no raindrops and no trail
     }
-}
-
-void RainSystem::cleanupRain() {
-    delete[] rainDrops;
 }
 
 void RainSystem::update(const bool* buildingMap) {
@@ -36,11 +29,11 @@ void RainSystem::update(const bool* buildingMap) {
 
     switch (mode) {
         case RainMode::HEAVY:
-            dropChance *= RAIN_HEAVY_MULTIPLIER;
+            dropChance *= RainVisuals::RAIN_HEAVY_MULTIPLIER;
             maxTrailLength = RAIN_MAX_TRAIL_LENGTH * 2;
             break;
         case RainMode::STORM:
-            dropChance *= RAIN_STORM_MULTIPLIER;
+            dropChance *= RainVisuals::RAIN_STORM_MULTIPLIER;
             maxTrailLength = RAIN_MAX_TRAIL_LENGTH * 3;
             windOffset = random8(3) - 1; // -1, 0, or 1
             break;
@@ -58,7 +51,7 @@ void RainSystem::update(const bool* buildingMap) {
                 rainDrops[x].y++;
                 rainDrops[x].trailLength = std::min<uint8_t>(rainDrops[x].trailLength + 1, maxTrailLength);
 
-                if (mode == RainMode::STORM && random8() < RAIN_STORM_WIND_CHANCE) {
+                if (mode == RainMode::STORM && random8() < RainVisuals::RAIN_STORM_WIND_CHANCE) {
                     int8_t newX = (x + windOffset + width) % width;
                     if (rainDrops[newX].y >= height) {
                         std::swap(rainDrops[x], rainDrops[newX]);
@@ -76,13 +69,13 @@ void RainSystem::update(const bool* buildingMap) {
 void RainSystem::draw(CRGB* leds) const {
     if (!isVisible) return;
 
-    uint8_t rainBrightness = std::min(static_cast<uint8_t>(RAIN_BRIGHTNESS), static_cast<uint8_t>(255));
+    uint8_t rainBrightness = std::min(static_cast<uint8_t>(Brightness::RAIN_BRIGHTNESS), static_cast<uint8_t>(255));
     switch (mode) {
         case RainMode::HEAVY:
-            rainBrightness = std::min(static_cast<uint8_t>(RAIN_BRIGHTNESS * 1.5), static_cast<uint8_t>(255));
+            rainBrightness = std::min(static_cast<uint8_t>(Brightness::RAIN_BRIGHTNESS * 1.5), static_cast<uint8_t>(255));
             break;
         case RainMode::STORM:
-            rainBrightness = std::min(static_cast<uint8_t>(RAIN_BRIGHTNESS * 2), static_cast<uint8_t>(255));
+            rainBrightness = std::min(static_cast<uint8_t>(Brightness::RAIN_BRIGHTNESS * 2), static_cast<uint8_t>(255));
             break;
         default:
             break;

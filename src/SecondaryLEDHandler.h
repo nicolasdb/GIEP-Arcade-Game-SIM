@@ -2,7 +2,9 @@
 
 #include <Arduino.h>
 #include <FastLED.h>
+#include <array>
 #include "config.h"
+#include "game_config.h"
 
 enum class SecondaryLEDZone {
     NONE,
@@ -23,24 +25,34 @@ enum class SecondaryLEDZone {
     WIN
 };
 
+enum class RainLevel {
+    NONE,
+    LIGHT,
+    MODERATE,
+    HEAVY
+};
+
 class SecondaryLEDHandler {
 public:
     SecondaryLEDHandler();
     void begin();
     void update();
     void setZoneState(SecondaryLEDZone zone, bool state);
-    void setRainLevel(uint8_t level);
+    void setRainLevel(RainLevel level);
     void setEndGameState(SecondaryLEDZone state);
     static const char* getZoneName(SecondaryLEDZone zone);
-    void setFloodZoneColor(uint8_t r, uint8_t g, uint8_t b);  // New method
+    void setFloodZoneColor(uint8_t r, uint8_t g, uint8_t b);
 
 private:
-    CRGB leds[TOTAL_SECONDARY_LEDS];
-    bool zoneStates[SECONDARY_NUM_ZONES];
+    static constexpr size_t SECONDARY_LED_COUNT = TOTAL_SECONDARY_LEDS;
+    static constexpr size_t NUM_ZONES = SECONDARY_NUM_ZONES;
+
+    std::array<CRGB, SECONDARY_LED_COUNT> leds;
+    std::array<bool, NUM_ZONES> zoneStates;
     SecondaryLEDZone endGameState;
-    uint8_t rainLevel;
+    RainLevel rainLevel;
     unsigned long lastBlinkTime;
-    CRGB floodZoneColor;  // New member variable
+    CRGB floodZoneColor;
 
     void updateNormalState();
     void updateEndGameState();

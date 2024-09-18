@@ -1,19 +1,11 @@
 #include "ButtonHandler.h"
 
 ButtonHandler::ButtonHandler(MCP23017Handler& mcpHandler, GameLogic& gameLogic)
-    : _mcpHandler(mcpHandler), _gameLogic(gameLogic) {
-    _lastMcpStates = 0xFF;
-    _mcpButtonStates = 0xFF;
-    for (uint8_t i = 0; i < NUM_MCP_BUTTONS; i++) {
-        _lastMcpDebounceTime[i] = 0;
-    }
-    _lastBasinGateState = HIGH;
-    _basinGateButtonState = HIGH;
-    _lastBasinGateDebounceTime = 0;
-    _lastDebugState = HIGH;
-    _debugButtonState = HIGH;
-    _lastDebugDebounceTime = 0;
-
+    : _mcpHandler(mcpHandler), _gameLogic(gameLogic), _lastMcpStates(0xFF), _mcpButtonStates(0xFF),
+      _lastMcpDebounceTime{}, _lastBasinGateState(HIGH), _basinGateButtonState(HIGH),
+      _lastBasinGateDebounceTime(0), _lastDebugState(HIGH), _debugButtonState(HIGH),
+      _lastDebugDebounceTime(0) {
+    
     pinMode(BASIN_GATE_BUTTON_PIN, INPUT_PULLUP);
     pinMode(BASIN_GATE_LED_PIN, OUTPUT);
     pinMode(DEBUG_BUTTON_PIN, INPUT_PULLUP);

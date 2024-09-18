@@ -1,14 +1,16 @@
 #include "SecondaryLEDHandler.h"
 #include "DebugLogger.h"
 
+using namespace GameConfig;
+
 SecondaryLEDHandler::SecondaryLEDHandler() 
-    : endGameState(SecondaryLEDZone::NONE), rainLevel(0), lastBlinkTime(0), floodZoneColor(CRGB::Blue) {
-    memset(zoneStates, 0, sizeof(zoneStates));
+    : endGameState(SecondaryLEDZone::NONE), rainLevel(RainLevel::NONE), lastBlinkTime(0), floodZoneColor(CRGB::Blue) {
+    zoneStates.fill(false);
     DebugLogger::debug("SecondaryLEDHandler initialized");
 }
 
 void SecondaryLEDHandler::begin() {
-    FastLED.addLeds<WS2813, SECONDARY_LED_PIN, GRB>(leds, TOTAL_SECONDARY_LEDS);
+    FastLED.addLeds<WS2813, SECONDARY_LED_PIN, GRB>(leds.data(), SECONDARY_LED_COUNT);
     FastLED.clear();
     FastLED.show();
     DebugLogger::debug("SecondaryLEDHandler begun");
@@ -30,7 +32,7 @@ void SecondaryLEDHandler::setFloodZoneColor(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 void SecondaryLEDHandler::updateNormalState() {
-    for (int zone = 0; zone < SECONDARY_NUM_ZONES; zone++) {
+    for (size_t zone = 0; zone < NUM_ZONES; zone++) {
         if (zoneStates[zone]) {
             for (int i = 0; i < LEDS_PER_ZONE; i++) {
                 leds[zone * LEDS_PER_ZONE + i] = CRGB(GET_SECONDARY_LED_COLOR(zone, i));
@@ -48,7 +50,7 @@ void SecondaryLEDHandler::updateNormalState() {
 
 void SecondaryLEDHandler::setZoneState(SecondaryLEDZone zone, bool state) {
     uint8_t index = getZoneIndexFromBitmap(zone);
-    if (index < SECONDARY_NUM_ZONES) {
+    if (index < NUM_ZONES) {
         zoneStates[index] = state;
         DebugLogger::debug("Zone %d state set to %d", index, state);
     } else {
@@ -56,9 +58,9 @@ void SecondaryLEDHandler::setZoneState(SecondaryLEDZone zone, bool state) {
     }
 }
 
-void SecondaryLEDHandler::setRainLevel(uint8_t level) {
+void SecondaryLEDHandler::setRainLevel(RainLevel level) {
     rainLevel = level;
-    DebugLogger::debug("Rain level set to %d", level);
+    DebugLogger::debug("Rain level set to %d", static_cast<int>(level));
     updateRainLevelIndicators();
 }
 
@@ -70,7 +72,7 @@ void SecondaryLEDHandler::setEndGameState(SecondaryLEDZone state) {
 
 void SecondaryLEDHandler::updateEndGameState() {
     unsigned long currentTime = millis();
-    bool blinkOn = ((currentTime - lastBlinkTime) / 500) % 2 == 0;  // 0.5-second blink interval
+    bool blinkOn = ((currentTime - lastBlinkTime) / Animation::BLINK_DURATION) % 2 == 0;
     lastBlinkTime = currentTime;  // Update lastBlinkTime every call
 
     DebugLogger::debug("Updating end game state. EndGameState: %d, BlinkOn: %d, CurrentTime: %lu, LastBlinkTime: %lu", 
@@ -82,7 +84,7 @@ void SecondaryLEDHandler::updateEndGameState() {
             endGameColor = CRGB::Cyan;
             break;
         case SecondaryLEDZone::FLOOD_DEATH:
-            endGameColor = floodZoneColor;  // Use the new flood zone color
+            endGameColor = floodZoneColor;
             break;
         case SecondaryLEDZone::POLLUTION_DEATH:
             endGameColor = CRGB::Red;
@@ -96,7 +98,7 @@ void SecondaryLEDHandler::updateEndGameState() {
         // Blink WIN_ZONE and all GIEP zones
         uint8_t winIndex = getZoneIndexFromBitmap(SecondaryLEDZone::WIN);
 
-        for (int zone = 0; zone < SECONDARY_NUM_ZONES; zone++) {
+        for (size_t zone = 0; zone < NUM_ZONES; zone++) {
             CRGB zoneColor;
             SecondaryLEDZone currentZone = static_cast<SecondaryLEDZone>(zone);
             if (zone == winIndex) {
@@ -115,7 +117,7 @@ void SecondaryLEDHandler::updateEndGameState() {
                                blinkOn ? "ON" : "OFF", zoneColor.r, zoneColor.g, zoneColor.b);
         }
     } else {  // FLOOD_DEATH or POLLUTION_DEATH
-        for (int zone = 0; zone < SECONDARY_NUM_ZONES; zone++) {
+        for (size_t zone = 0; zone < NUM_ZONES; zone++) {
             if (zone != getZoneIndexFromBitmap(SecondaryLEDZone::WIN)) {
                 for (int i = 0; i < LEDS_PER_ZONE; i++) {
                     leds[zone * LEDS_PER_ZONE + i] = blinkOn ? endGameColor : CRGB::Black;
@@ -129,7 +131,7 @@ void SecondaryLEDHandler::updateEndGameState() {
 
 CRGB SecondaryLEDHandler::getColorForZone(SecondaryLEDZone zone) {
     uint8_t index = getZoneIndexFromBitmap(zone);
-    if (index < SECONDARY_NUM_ZONES) {
+    if (index < NUM_ZONES) {
         if (zone == SecondaryLEDZone::FLOOD_DEATH) {
             DebugLogger::debug("Color for FLOOD_DEATH zone: (%d, %d, %d)", floodZoneColor.r, floodZoneColor.g, floodZoneColor.b);
             return floodZoneColor;
@@ -143,7 +145,7 @@ CRGB SecondaryLEDHandler::getColorForZone(SecondaryLEDZone zone) {
 }
 
 void SecondaryLEDHandler::updateRainLevelIndicators() {
-    DebugLogger::debug("Updating rain level indicators. Current level: %d", rainLevel);
+    DebugLogger::debug("Updating rain level indicators. Current level: %d", static_cast<int>(rainLevel));
     
     // Turn off all rain level indicators
     for (int i = 0; i < 3; i++) {
@@ -155,7 +157,8 @@ void SecondaryLEDHandler::updateRainLevelIndicators() {
     }
 
     // Turn on the appropriate rain level indicator based on the current rain level
-    for (int i = 0; i < rainLevel; i++) {
+    int rainLevelInt = static_cast<int>(rainLevel);
+    for (int i = 0; i < rainLevelInt; i++) {
         SecondaryLEDZone zone = static_cast<SecondaryLEDZone>(static_cast<int>(SecondaryLEDZone::RAIN_LEVEL_1) + i);
         uint8_t zoneIndex = getZoneIndexFromBitmap(zone);
         for (int j = 0; j < LEDS_PER_ZONE; j++) {
@@ -184,7 +187,7 @@ uint8_t SecondaryLEDHandler::getZoneIndexFromBitmap(SecondaryLEDZone zone) {
         case SecondaryLEDZone::RAIN_LEVEL_2: return 12;
         case SecondaryLEDZone::RAIN_LEVEL_1: return 13;
         case SecondaryLEDZone::FLOOD_DEATH: return 10; // Same as POLLUTION_DEATH
-        default: return SECONDARY_NUM_ZONES; // Invalid index
+        default: return NUM_ZONES; // Invalid index
     }
 }
 

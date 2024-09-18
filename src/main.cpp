@@ -71,22 +71,22 @@ void setup() {
 
     mcpHandler.begin();
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setBrightness(BRIGHTNESS);
+    FastLED.setBrightness(GameConfig::Brightness::GLOBAL_BRIGHTNESS);
     FastLED.clear();
     FastLED.show();
     secondaryLEDs.begin();
     scene.loadDefaultScene();
 
     BaseType_t result;
-    result = xTaskCreatePinnedToCore(buttonTask, "ButtonTask", BUTTON_TASK_STACK_SIZE, NULL, BUTTON_TASK_PRIORITY, NULL, 0);
+    result = xTaskCreatePinnedToCore(buttonTask, "ButtonTask", GameConfig::TaskConfig::BUTTON_TASK_STACK_SIZE, NULL, GameConfig::TaskConfig::BUTTON_TASK_PRIORITY, NULL, 0);
     if (result != pdPASS) {
         DebugLogger::critical("Failed to create ButtonTask: %d", result);
     }
-    result = xTaskCreatePinnedToCore(gameUpdateTask, "GameUpdateTask", GAME_UPDATE_TASK_STACK_SIZE, NULL, GAME_UPDATE_TASK_PRIORITY, NULL, 1);
+    result = xTaskCreatePinnedToCore(gameUpdateTask, "GameUpdateTask", GameConfig::TaskConfig::GAME_UPDATE_TASK_STACK_SIZE, NULL, GameConfig::TaskConfig::GAME_UPDATE_TASK_PRIORITY, NULL, 1);
     if (result != pdPASS) {
         DebugLogger::critical("Failed to create GameUpdateTask: %d", result);
     }
-    result = xTaskCreatePinnedToCore(ledUpdateTask, "LEDUpdateTask", LED_UPDATE_TASK_STACK_SIZE, NULL, LED_UPDATE_TASK_PRIORITY, NULL, 1);
+    result = xTaskCreatePinnedToCore(ledUpdateTask, "LEDUpdateTask", GameConfig::TaskConfig::LED_UPDATE_TASK_STACK_SIZE, NULL, GameConfig::TaskConfig::LED_UPDATE_TASK_PRIORITY, NULL, 1);
     if (result != pdPASS) {
         DebugLogger::critical("Failed to create LEDUpdateTask: %d", result);
     }

@@ -1,7 +1,7 @@
-#pragma once
-#include <Arduino.h>
+#ifndef GAME_LOGIC_H
+#define GAME_LOGIC_H
+
 #include "Scene.h"
-#include "DebugLogger.h"
 #include "SecondaryLEDHandler.h"
 
 enum class GameState {
@@ -11,7 +11,7 @@ enum class GameState {
     HEAVY,
     STORM,
     FLOOD,
-    CANAL,
+    BASIN_OVERFLOW,  // Renamed from CANAL
     WIN
 };
 
@@ -27,16 +27,6 @@ public:
     void initializeGameState();
 
 private:
-    Scene& scene;
-    SecondaryLEDHandler& secondaryLEDs;
-    GameState currentState;
-    unsigned long stateStartTime;
-    float sewerLevel;
-    float basinLevel;
-    bool buttonStates[8];  // For 8 GIEP buttons
-    bool basinGateOpen;
-    bool gameActive;
-
     void transitionState(GameState newState);
     void updateWaterLevels();
     void checkForStateTransition();
@@ -53,5 +43,16 @@ private:
     void updateGIEPAndBasinGateLEDs();
     void checkEndGameTransition();
     void resetGameElements();
-    void handleWinStateButtonPress(uint8_t buttonIndex);
+
+    Scene& scene;
+    SecondaryLEDHandler& secondaryLEDs;
+    GameState currentState;
+    unsigned long stateStartTime;
+    float sewerLevel;
+    float basinLevel;
+    bool basinGateOpen;
+    bool buttonStates[8];
+    bool gameActive;
 };
+
+#endif // GAME_LOGIC_H

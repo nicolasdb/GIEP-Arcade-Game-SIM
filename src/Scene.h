@@ -2,9 +2,11 @@
 #include <Arduino.h>
 #include <FastLED.h>
 #include <vector>
+#include <array>
 #include "MatrixConfig.h"
 #include "DebugLogger.h"
 #include "config.h"
+#include "game_config.h"
 #include "RainSystem.h"
 
 enum class PixelType {
@@ -56,7 +58,7 @@ public:
     CRGB getSewerColor() const;
     void setPollutionState(bool polluted);
     const bool* getBuildingMap() const;
-    void setFloodState(bool state);  // New method
+    void setFloodState(bool state);
 
 private:
     const MatrixConfig& matrixConfig;
@@ -64,7 +66,7 @@ private:
     bool* buildingMap;
     uint8_t width;
     uint8_t height;
-    bool giepStates[8];
+    std::array<bool, 8> giepStates;
     bool basinGateActive;
     float sewerLevel;
     float basinLevel;
@@ -76,7 +78,7 @@ private:
     std::vector<Point> riverShape;
     uint8_t riverFlowOffset;
     bool isPolluted;
-    bool isFloodState;  // New member variable
+    bool isFloodState;
     RainSystem rainSystem;
 
     void initializePixelMap();

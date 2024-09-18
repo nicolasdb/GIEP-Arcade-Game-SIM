@@ -2,6 +2,7 @@
 #include "config.h"
 #include <stack>
 
+using namespace GameConfig;
 
 Scene::Scene(const MatrixConfig& config)
     : matrixConfig(config), width(config.getWidth()), height(config.getHeight()),
@@ -9,7 +10,7 @@ Scene::Scene(const MatrixConfig& config)
       riverFlowOffset(0), isPolluted(false), isFloodState(false), rainSystem(config) {
     initializePixelMap();
     initializeBuildingMap();
-    memset(giepStates, 0, sizeof(giepStates));
+    giepStates.fill(false);
 }
 
 Scene::~Scene() {
@@ -144,7 +145,7 @@ void Scene::draw(CRGB* leds) const {
         // Show full shape of sewer pixels during flood state
         for (const auto& point : sewerShape) {
             uint16_t index = matrixConfig.XY(point.x, point.y);
-            leds[index] = CRGB(SEWER_BRIGHTNESS, SEWER_BRIGHTNESS, 0);
+            leds[index] = CRGB(Brightness::SEWER_BRIGHTNESS, Brightness::SEWER_BRIGHTNESS, 0);
         }
     } else {
         drawWaterLevel(leds, sewerShape, sewerLevel, SEWER_COLOR, SEWER_EMPTY_COLOR);
@@ -156,7 +157,7 @@ void Scene::draw(CRGB* leds) const {
     // Draw basin gate
     for (const auto& point : basinGateShape) {
         uint16_t index = matrixConfig.XY(point.x, point.y);
-        leds[index] = basinGateActive ? BASIN_GATE_COLOR : CRGB(BASIN_GATE_INACTIVE_BRIGHTNESS, 0, 0);
+        leds[index] = basinGateActive ? BASIN_GATE_COLOR : CRGB(Brightness::BASIN_GATE_INACTIVE_BRIGHTNESS, 0, 0);
     }
 
     // Draw basin overflow and river
@@ -264,12 +265,12 @@ const bool* Scene::getBuildingMap() const {
 CRGB Scene::getColorForPixelType(PixelType type) const {
     switch (type) {
         case PixelType::ACTIVE:
-            return CRGB(ACTIVE_BRIGHTNESS, ACTIVE_BRIGHTNESS, ACTIVE_BRIGHTNESS);  // Dim white for active areas
+            return CRGB(Brightness::ACTIVE_BRIGHTNESS, Brightness::ACTIVE_BRIGHTNESS, Brightness::ACTIVE_BRIGHTNESS);
         case PixelType::BUILDING:
             return CRGB::Black;
         case PixelType::SEWER:
         case PixelType::BASIN:
-            return CRGB::Black;  // These are now handled in the draw method
+            return CRGB::Black;
         case PixelType::GIEP_1:
         case PixelType::GIEP_2:
         case PixelType::GIEP_3:
@@ -279,13 +280,13 @@ CRGB Scene::getColorForPixelType(PixelType type) const {
         case PixelType::GIEP_7:
         case PixelType::GIEP_8: {
             int index = static_cast<int>(type) - static_cast<int>(PixelType::GIEP_1);
-            return giepStates[index] ? CRGB(0, GIEP_ACTIVE_BRIGHTNESS, 0) : CRGB(0, GIEP_INACTIVE_BRIGHTNESS, 0);
+            return giepStates[index] ? CRGB(0, Brightness::GIEP_ACTIVE_BRIGHTNESS, 0) : CRGB(0, Brightness::GIEP_INACTIVE_BRIGHTNESS, 0);
         }
         case PixelType::BASIN_GATE:
-            return basinGateActive ? CRGB(BASIN_GATE_BRIGHTNESS, 0, 0) : CRGB(BASIN_GATE_INACTIVE_BRIGHTNESS, 0, 0);
+            return basinGateActive ? CRGB(Brightness::BASIN_GATE_BRIGHTNESS, 0, 0) : CRGB(Brightness::BASIN_GATE_INACTIVE_BRIGHTNESS, 0, 0);
         case PixelType::BASIN_OVERFLOW:
         case PixelType::RIVER:
-            return CRGB::Black;  // These are now handled in the draw method
+            return CRGB::Black;
         default:
             return CRGB::Black;
     }
@@ -358,11 +359,11 @@ void Scene::updateOverflowState() {
 }
 
 CRGB Scene::getSewerColor() const {
-    return CRGB(SEWER_BRIGHTNESS, SEWER_BRIGHTNESS, 0);
+    return CRGB(Brightness::SEWER_BRIGHTNESS, Brightness::SEWER_BRIGHTNESS, 0);
 }
 
 void Scene::updateRiverFlow() {
-    riverFlowOffset = (riverFlowOffset + 1); // Changed from 16 to 20 steps for a complete cycle
+    riverFlowOffset = (riverFlowOffset + 1);
 }
 
 void Scene::drawRiver(CRGB* leds) const {
@@ -376,21 +377,18 @@ void Scene::drawRiver(CRGB* leds) const {
     }
 
     uint8_t totalHeight = maxY - minY + 1;
-    uint8_t animatedLevels = std::min(totalHeight, static_cast<uint8_t>(3)); // Animate only the first 3 levels
+    uint8_t animatedLevels = std::min(totalHeight, static_cast<uint8_t>(3));
 
     for (const auto& point : riverShape) {
         uint16_t index = matrixConfig.XY(point.x, point.y);
         if (isPolluted) {
-            leds[index] = CRGB(RIVER_BRIGHTNESS, 0, RIVER_BRIGHTNESS); // Magenta for pollution
-        } else if (point.y >= maxY - animatedLevels + 1) { // Animate the bottom 3 levels (or less if river is smaller)
-            // Create a flowing effect from left to right
-            // CHANGED: Adjusted the multiplier to control flow speed
+            leds[index] = CRGB(Brightness::RIVER_BRIGHTNESS, 0, Brightness::RIVER_BRIGHTNESS);
+        } else if (point.y >= maxY - animatedLevels + 1) {
             uint8_t brightness = sin8((width - point.x) * 25 + riverFlowOffset * 5);
-            brightness = map(brightness, 0, 255, 70, 255); // Adjust the range of blue shades
-            leds[index] = CRGB(0, 0, brightness); // Only blue shades
+            brightness = map(brightness, 0, 255, 70, 255);
+            leds[index] = CRGB(0, 0, brightness);
         } else {
-            // Use a dimmer blue color for the upper part of the river
-            leds[index] = CRGB(0, 0, 20); // Dimmer blue for non-animated part
+            leds[index] = CRGB(0, 0, 20);
         }
     }
 }
