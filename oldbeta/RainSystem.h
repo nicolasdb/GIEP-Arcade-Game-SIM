@@ -14,6 +14,7 @@ enum class RainMode {
 struct RainDrop {
     uint8_t y;
     uint8_t trailLength;
+    int8_t x;  // Added x coordinate for horizontal movement
 };
 
 class RainSystem {
@@ -36,6 +37,7 @@ private:
     float intensity;
     bool isVisible;
     RainMode mode;
+    int8_t windDirection;  // Added wind direction
 
     void initializeRain();
     void cleanupRain();
