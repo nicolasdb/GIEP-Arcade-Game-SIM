@@ -43,6 +43,7 @@ private:
     void updateGIEPAndBasinGateLEDs();
     void checkEndGameTransition();
     void resetGameElements();
+    void updateEndGameState();  // Added the new function declaration
 
     Scene& scene;
     SecondaryLEDHandler& secondaryLEDs;

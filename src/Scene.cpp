@@ -125,6 +125,7 @@ void Scene::setPixelType(uint8_t x, uint8_t y, PixelType type) {
 
 void Scene::update() {
     rainSystem.update(buildingMap);
+    DebugLogger::debug("Current basin level: %.2f, Current sewer level: %.2f", basinLevel, sewerLevel);
     updateOverflowState();
     updateRiverFlow();
 }
@@ -142,11 +143,13 @@ void Scene::draw(CRGB* leds) const {
 
     // Draw sewer level
     if (isFloodState) {
-        // Show full shape of sewer pixels during flood state
+        // Blink yellow for sewer during flood state
+        CRGB floodColor = (millis() / 500) % 2 == 0 ? CRGB(Brightness::FLOOD_SEWER_BRIGHTNESS, Brightness::FLOOD_SEWER_BRIGHTNESS, 0) : CRGB::Black;
         for (const auto& point : sewerShape) {
             uint16_t index = matrixConfig.XY(point.x, point.y);
-            leds[index] = CRGB(Brightness::SEWER_BRIGHTNESS, Brightness::SEWER_BRIGHTNESS, 0);
+            leds[index] = floodColor;
         }
+        DebugLogger::debug("Drawing blinking flood state for sewer");
     } else {
         drawWaterLevel(leds, sewerShape, sewerLevel, SEWER_COLOR, SEWER_EMPTY_COLOR);
     }
@@ -166,6 +169,7 @@ void Scene::draw(CRGB* leds) const {
             uint16_t index = matrixConfig.XY(point.x, point.y);
             leds[index] = BASIN_OVERFLOW_COLOR;
         }
+        DebugLogger::debug("Drawing basin overflow");
     }
 
     // Draw river with flowing effect
@@ -187,14 +191,19 @@ void Scene::setBasinGateState(bool state) {
 
 void Scene::setSewerLevel(float level) {
     sewerLevel = constrain(level, 0, 1);
+    DebugLogger::debug("Sewer level set to: %.2f", sewerLevel);
 }
 
 void Scene::setBasinLevel(float level) {
     basinLevel = constrain(level, 0, 1);
+    DebugLogger::debug("Basin level set to: %.2f", basinLevel);
 }
 
 void Scene::drawWaterLevel(CRGB* leds, const std::vector<Point>& shape, float level, CRGB fullColor, CRGB emptyColor) const {
-    if (shape.empty()) return;
+    if (shape.empty()) {
+        DebugLogger::warn("drawWaterLevel: Shape is empty");
+        return;
+    }
 
     uint8_t minY = height;
     uint8_t maxY = 0;
@@ -206,14 +215,24 @@ void Scene::drawWaterLevel(CRGB* leds, const std::vector<Point>& shape, float le
     uint8_t totalHeight = maxY - minY + 1;
     uint8_t filledPixels = round(level * totalHeight);
 
+    DebugLogger::debug("drawWaterLevel: level=%.2f, minY=%d, maxY=%d, totalHeight=%d, filledPixels=%d",
+                       level, minY, maxY, totalHeight, filledPixels);
+
+    int filledCount = 0;
+    int emptyCount = 0;
+
     for (const auto& point : shape) {
         uint16_t index = matrixConfig.XY(point.x, point.y);
         if (point.y >= maxY - filledPixels) {
             leds[index] = fullColor;
+            filledCount++;
         } else {
             leds[index] = emptyColor;
+            emptyCount++;
         }
     }
+
+    DebugLogger::debug("drawWaterLevel: Filled pixels: %d, Empty pixels: %d", filledCount, emptyCount);
 }
 
 void Scene::initializePixelMap() {
@@ -355,7 +374,13 @@ void Scene::floodFill(uint8_t startX, uint8_t startY, PixelType targetType, std:
 }
 
 void Scene::updateOverflowState() {
-    isBasinOverflow = (basinLevel >= 1.0f);
+    bool previousOverflowState = isBasinOverflow;
+    isBasinOverflow = (basinLevel >= GameBalance::OVERFLOW_ACTIVATION_THRESHOLD);
+    
+    if (isBasinOverflow != previousOverflowState) {
+        DebugLogger::info("Basin overflow state changed: %d -> %d (Basin level: %.2f)", 
+                          previousOverflowState, isBasinOverflow, basinLevel);
+    }
 }
 
 CRGB Scene::getSewerColor() const {
@@ -379,16 +404,25 @@ void Scene::drawRiver(CRGB* leds) const {
     uint8_t totalHeight = maxY - minY + 1;
     uint8_t animatedLevels = std::min(totalHeight, static_cast<uint8_t>(3));
 
+    bool shouldBlink = isPolluted; // Changed: Only blink when polluted, not during basin overflow
+    CRGB riverColor = shouldBlink ? CRGB(Brightness::RIVER_BRIGHTNESS, 0, Brightness::RIVER_BRIGHTNESS) : CRGB(0, 0, Brightness::RIVER_BRIGHTNESS);
+
     for (const auto& point : riverShape) {
         uint16_t index = matrixConfig.XY(point.x, point.y);
-        if (isPolluted) {
-            leds[index] = CRGB(Brightness::RIVER_BRIGHTNESS, 0, Brightness::RIVER_BRIGHTNESS);
-        } else if (point.y >= maxY - animatedLevels + 1) {
-            uint8_t brightness = sin8((width - point.x) * 25 + riverFlowOffset * 5);
-            brightness = map(brightness, 0, 255, 70, 255);
-            leds[index] = CRGB(0, 0, brightness);
+        
+        if (shouldBlink) {
+            // Blink the entire river for pollution
+            leds[index] = (millis() / 500) % 2 == 0 ? riverColor : CRGB::Black;
         } else {
-            leds[index] = CRGB(0, 0, 20);
+            if (point.y >= maxY - animatedLevels + 1) {
+                // Animated part of the river
+                uint8_t brightness = sin8((width - point.x) * 25 + riverFlowOffset * 5);
+                brightness = map(brightness, 0, 255, 70, 255);
+                leds[index] = CRGB(0, 0, brightness);
+            } else {
+                // Non-animated top line of the river
+                leds[index] = CRGB::Black;
+            }
         }
     }
 }

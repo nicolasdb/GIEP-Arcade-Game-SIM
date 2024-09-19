@@ -162,7 +162,7 @@ const SecondaryLEDZoneMapping SECONDARY_LED_ZONE_MAPPING[SECONDARY_NUM_ZONES] = 
 #define SEWER_EMPTY_COLOR CRGB(GameConfig::Brightness::ACTIVE_BRIGHTNESS, GameConfig::Brightness::ACTIVE_BRIGHTNESS, GameConfig::Brightness::ACTIVE_BRIGHTNESS)  // White with ACTIVE_BRIGHTNESS
 #define BASIN_EMPTY_COLOR CRGB(0, 0, 16)   // Dim blue
 #define BASIN_GATE_COLOR CRGB::Red
-#define BASIN_OVERFLOW_COLOR CRGB::Green
+#define BASIN_OVERFLOW_COLOR CRGB::Red  // Changed from Green to Red
 #define RIVER_COLOR CRGB(100, 0, 255)  // Purple color for the river
 
 // Function declarations for LED control

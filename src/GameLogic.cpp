@@ -24,6 +24,8 @@ void GameLogic::initializeGameState() {
 void GameLogic::update() {
     if (gameActive) {
         updateActiveGame();
+    } else if (currentState == GameState::WIN || currentState == GameState::FLOOD || currentState == GameState::BASIN_OVERFLOW) {
+        updateEndGameState();
     } else {
         updateWaitingMode();
     }
@@ -280,6 +282,9 @@ void GameLogic::handleBasinGate() {
         
         scene.setSewerLevel(sewerLevel);
         scene.setBasinLevel(basinLevel);
+        
+        DebugLogger::debug("Basin gate transfer - Amount: %.2f, New Sewer Level: %.2f, New Basin Level: %.2f",
+                           transferAmount, sewerLevel, basinLevel);
     }
 }
 
@@ -312,31 +317,50 @@ void GameLogic::checkForStateTransition() {
 void GameLogic::endGame(GameState endState) {
     DebugLogger::critical("Ending game. Previous state: %s, New state: %s", getStateString(), getStateString(endState));
     gameActive = false;
-    currentState = endState;  // Set the current state directly
-    stateStartTime = millis(); // Start the timer for END_STATE_DURATION
+    currentState = endState;
+    stateStartTime = millis();
+    
     if (endState == GameState::BASIN_OVERFLOW) {
         scene.setPollutionState(true);
-    }
-    if (endState == GameState::FLOOD) {
-        sewerLevel = 1.0f;  // Set sewer level to maximum
-        scene.setSewerLevel(sewerLevel);  // Update the scene with the new sewer level
-        scene.setFloodState(true);  // Set the flood state in the Scene
+    } else if (endState == GameState::FLOOD) {
+        sewerLevel = 1.0f;
+        scene.setSewerLevel(sewerLevel);
+        scene.setFloodState(true);
         DebugLogger::critical("FLOOD state set. Sewer level set to maximum: %.2f", sewerLevel);
-    }
-    if (endState == GameState::WIN) {
+    } else if (endState == GameState::WIN) {
         DebugLogger::critical("WIN state set. Updating secondary LEDs for WIN state.");
     }
-    updateSecondaryLEDs();  // Update LEDs immediately after changing state
-    resetGameElements();  // Reset game elements when ending the game
+    
+    updateSecondaryLEDs();
+}
+
+void GameLogic::updateEndGameState() {
+    unsigned long currentTime = millis();
+    unsigned long stateDuration = currentTime - stateStartTime;
+
+    if (currentState == GameState::BASIN_OVERFLOW) {
+        // Blink the pollution state
+        bool shouldBlink = (stateDuration / 500) % 2 == 0;  // Blink every 500ms
+        scene.setPollutionState(shouldBlink);
+    } else if (currentState == GameState::FLOOD) {
+        // Blink the flood state
+        bool shouldBlink = (stateDuration / 500) % 2 == 0;  // Blink every 500ms
+        scene.setFloodState(shouldBlink);
+    }
+
+    // Check if we need to transition back to waiting state
+    if (stateDuration >= Timing::END_STATE_DURATION) {
+        DebugLogger::critical("End game state duration exceeded. Transitioning to waiting state.");
+        initializeGameState();
+        resetGameElements();
+    }
 }
 
 void GameLogic::updateSecondaryLEDs() {
-    // Handle endgame states
     if (currentState == GameState::WIN) {
         DebugLogger::debug("Updating secondary LEDs for WIN state");
         secondaryLEDs.setEndGameState(SecondaryLEDZone::WIN);
-        // In WIN state, we still want to update GIEP zones for blinking
-        handleGIEPEffects();
+        handleGIEPEffects();  // Keep GIEP zones blinking in WIN state
     } else if (currentState == GameState::FLOOD) {
         secondaryLEDs.setEndGameState(SecondaryLEDZone::FLOOD_DEATH);
         secondaryLEDs.setFloodZoneColor(255, 0, 0);  // Set flood zone color to red
@@ -363,10 +387,8 @@ void GameLogic::updateSecondaryLEDs() {
 
         // Update GIEP and Basin Gate LEDs
         handleGIEPEffects();
+        secondaryLEDs.setZoneState(SecondaryLEDZone::BASIN_GATE, basinGateOpen);
     }
-
-    // Check if we need to transition back to waiting state after end game
-    checkEndGameTransition();
 }
 
 void GameLogic::resetGameElements() {
@@ -375,7 +397,7 @@ void GameLogic::resetGameElements() {
     scene.setSewerLevel(sewerLevel);
     scene.setBasinLevel(basinLevel);
     scene.setPollutionState(false);
-    scene.setFloodState(false);  // Reset flood state
+    scene.setFloodState(false);
     scene.setRainVisible(true);
     scene.setRainIntensity(RainVisuals::RAIN_INTENSITY_RAINING);
     basinGateOpen = false;
@@ -388,7 +410,7 @@ void GameLogic::resetGameElements() {
     }
     
     // Update secondary LEDs
-    secondaryLEDs.setRainLevel(RainLevel::LIGHT);  // Set to initial rain level
+    secondaryLEDs.setRainLevel(RainLevel::LIGHT);
     secondaryLEDs.setZoneState(SecondaryLEDZone::BASIN_GATE, false);
     for (int i = 0; i < 8; i++) {
         SecondaryLEDZone zone = static_cast<SecondaryLEDZone>(static_cast<int>(SecondaryLEDZone::GIEP_1) + i);
@@ -408,8 +430,8 @@ void GameLogic::checkEndGameTransition() {
         unsigned long endStateDuration = millis() - stateStartTime;
         if (endStateDuration >= Timing::END_STATE_DURATION) {
             DebugLogger::critical("End game state duration exceeded. Transitioning to waiting state.");
-            initializeGameState(); // Reset to initial waiting state
-            resetGameElements();   // Ensure all game elements are reset
+            initializeGameState();
+            resetGameElements();
         }
     }
 }

@@ -14,15 +14,16 @@ namespace GameConfig {
     namespace SewerMechanics {
         constexpr float SEWER_INCREASE_RATE_RAINING = 0.013f;
         constexpr float SEWER_INCREASE_RATE_HEAVY = 0.02f;
-        constexpr float SEWER_INCREASE_RATE_STORM = 0.025f;
+        constexpr float SEWER_INCREASE_RATE_STORM = 0.035f;
         constexpr float GIEP_EFFECT_STRENGTH = 0.0045f;
         constexpr float SEWER_DRAIN_RATE = 0.01f;
         constexpr float BASIN_GATE_TRANSFER_RATE = 0.007f;
     }
 
     namespace GameBalance {
-        constexpr float SEWER_OVERFLOW_THRESHOLD = 0.65f;
-        constexpr float BASIN_OVERFLOW_THRESHOLD = 0.95f;
+        constexpr float SEWER_OVERFLOW_THRESHOLD = 0.65f;  // Changed back to 0.65
+        constexpr float BASIN_OVERFLOW_THRESHOLD = 0.95f;  // Changed to 0.95
+        constexpr float OVERFLOW_ACTIVATION_THRESHOLD = 0.8f;  // New threshold for overflow activation
         constexpr float WIN_THRESHOLD = 0.5f;
     }
 
@@ -33,7 +34,7 @@ namespace GameConfig {
         constexpr uint8_t RAIN_MAX_TRAIL_LENGTH = 4;
         constexpr float RAIN_HEAVY_MULTIPLIER = 10.0f;
         constexpr float RAIN_STORM_MULTIPLIER = 30.0f;
-        constexpr uint8_t RAIN_STORM_WIND_CHANCE = 10; // 90% chance (out of 255)
+        constexpr uint8_t RAIN_STORM_WIND_CHANCE = 100; // 90% chance (out of 255)
     }
 
     namespace Brightness {
@@ -50,6 +51,7 @@ namespace GameConfig {
         constexpr uint8_t BASIN_GATE_INACTIVE_BRIGHTNESS = 40;
         constexpr uint8_t BASIN_OVERFLOW_BRIGHTNESS = 255;
         constexpr uint8_t RIVER_BRIGHTNESS = 255;
+        constexpr uint8_t FLOOD_SEWER_BRIGHTNESS = 255;  // New brightness for flood state
     }
 
     namespace Animation {
