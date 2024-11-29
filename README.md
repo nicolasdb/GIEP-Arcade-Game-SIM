@@ -1,6 +1,7 @@
 # GIEP Arcade Game SIM
 
-This project is a simulation of an arcade game for GIEP (Green Infrastructure and Educational Program). The game simulates a city's water management system during various rainfall intensities, showcasing the importance of green infrastructure in managing urban water flow.
+This arcade game is designed to raise awareness about the importance of effective rainwater management in urban areas, specifically in the context of the Integrated Management of Rainwater ([GIEP: Gestion intégrée des eaux pluviales](https://environnement.brussels/pro/agenda/gestion-integree-des-eaux-pluviales-et-vegetalisation-des-giep)) program in Brussels. 
+GIEP aims to manage rainwater in a sustainable and integrated way, reducing flooding, improving water quality, and promoting urban biodiversity. The game highlights the challenges of conventional rainwater management, where urbanization and climate change lead to increased flooding, water pollution, and soil degradation. By simulating the impact of different rainwater management strategies, the game encourages players to think creatively about solutions that prioritize infiltration, reuse, and natural drainage, ultimately promoting a more ecological approach to urban water management.
 
 ## Features
 
