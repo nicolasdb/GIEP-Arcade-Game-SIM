@@ -18,13 +18,13 @@
 #define COLOR_YELLOW_TINTED_WHITE 0xffffa0  // New color for yellow-tinted white
 
 // Brightness levels
-#define BRIGHTNESS_ACTIVE_WHITE 200
-#define BRIGHTNESS_INACTIVE_WHITE 50
-#define BRIGHTNESS_ACTIVE_YELLOW_TINTED_WHITE 200  // New setting for active yellow-tinted white
-#define BRIGHTNESS_INACTIVE_YELLOW_TINTED_WHITE 50  // New setting for inactive yellow-tinted white
-#define BRIGHTNESS_ACTIVE_BLUE 200
+#define BRIGHTNESS_ACTIVE_WHITE 20
+#define BRIGHTNESS_INACTIVE_WHITE 10
+#define BRIGHTNESS_ACTIVE_YELLOW_TINTED_WHITE 100  // New setting for active yellow-tinted white
+#define BRIGHTNESS_INACTIVE_YELLOW_TINTED_WHITE 10  // New setting for inactive yellow-tinted white
+#define BRIGHTNESS_ACTIVE_BLUE 100
 #define BRIGHTNESS_INACTIVE_BLUE 5
-#define BRIGHTNESS_ACTIVE_YELLOW 200
+#define BRIGHTNESS_ACTIVE_YELLOW 100
 #define BRIGHTNESS_INACTIVE_YELLOW 5
 
 #endif // CONFIG_H
