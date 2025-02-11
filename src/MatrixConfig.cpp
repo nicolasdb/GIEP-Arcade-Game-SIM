@@ -46,8 +46,8 @@ void MatrixConfig::loadFromArray() {
         for (uint8_t x = 0; x < width; x++) {
             uint16_t index = XY(x, y);
             CRGB color = CRGB(MAIN_BITMAP[y * width + x]);
-            if (color == CRGB(COLOR_WHITE) || color == CRGB(COLOR_BLUE) || color == CRGB(COLOR_YELLOW)) {
-                setPixel(x, y, CRGB(COLOR_YELLOW_TINTED_WHITE), BRIGHTNESS_INACTIVE_YELLOW_TINTED_WHITE);
+            if (color == CRGB(MAP_WHITE) || color == CRGB(MAP_BLUE) || color == CRGB(MAP_YELLOW)) {
+                setPixel(x, y, CRGB(DISPLAY_BLUE_TINTED_WHITE), BRIGHTNESS_INACTIVE_BLUE_TINTED_WHITE);
             } else {
                 setPixel(x, y, color, 255);
             }
@@ -57,18 +57,18 @@ void MatrixConfig::loadFromArray() {
 }
 
 bool MatrixConfig::isBluePixel(uint8_t x, uint8_t y) {
-    return MAIN_BITMAP[y * width + x] == COLOR_BLUE;
+    return MAIN_BITMAP[y * width + x] == MAP_BLUE;
 }
 
 bool MatrixConfig::isYellowPixel(uint8_t x, uint8_t y) {
-    return MAIN_BITMAP[y * width + x] == COLOR_YELLOW;
+    return MAIN_BITMAP[y * width + x] == MAP_YELLOW;
 }
 
 void MatrixConfig::activateBluePixels() {
     for (uint8_t y = 0; y < height; y++) {
         for (uint8_t x = 0; x < width; x++) {
             if (isBluePixel(x, y)) {
-                setPixel(x, y, CRGB(COLOR_BLUE), BRIGHTNESS_ACTIVE_BLUE);
+                setPixel(x, y, CRGB(DISPLAY_BLUE), BRIGHTNESS_ACTIVE_BLUE);
                 isActivePixel[XY(x, y)] = true;
             }
         }
@@ -79,7 +79,7 @@ void MatrixConfig::activateYellowPixels() {
     for (uint8_t y = 0; y < height; y++) {
         for (uint8_t x = 0; x < width; x++) {
             if (isYellowPixel(x, y)) {
-                setPixel(x, y, CRGB(COLOR_YELLOW), BRIGHTNESS_ACTIVE_YELLOW);
+                setPixel(x, y, CRGB(DISPLAY_DEEP_BLUE), BRIGHTNESS_ACTIVE_DEEP_BLUE);
                 isActivePixel[XY(x, y)] = true;
             }
         }
@@ -90,7 +90,7 @@ void MatrixConfig::activateBlueAndYellowPixels() {
     for (uint8_t y = 0; y < height; y++) {
         for (uint8_t x = 0; x < width; x++) {
             if (isBluePixel(x, y) || isYellowPixel(x, y)) {
-                setPixel(x, y, CRGB(COLOR_BLUE), BRIGHTNESS_ACTIVE_BLUE);
+                setPixel(x, y, CRGB(DISPLAY_BLUE), BRIGHTNESS_ACTIVE_BLUE);
                 isActivePixel[XY(x, y)] = true;
             }
         }
@@ -103,8 +103,8 @@ void MatrixConfig::deactivateAllPixels() {
             uint16_t index = XY(x, y);
             if (isActivePixel[index]) {
                 CRGB originalColor = CRGB(MAIN_BITMAP[y * width + x]);
-                if (originalColor == CRGB(COLOR_BLUE) || originalColor == CRGB(COLOR_YELLOW) || originalColor == CRGB(COLOR_WHITE)) {
-                    setPixel(x, y, CRGB(COLOR_YELLOW_TINTED_WHITE), BRIGHTNESS_INACTIVE_YELLOW_TINTED_WHITE);
+                if (originalColor == CRGB(MAP_BLUE) || originalColor == CRGB(MAP_YELLOW) || originalColor == CRGB(MAP_WHITE)) {
+                    setPixel(x, y, CRGB(DISPLAY_BLUE_TINTED_WHITE), BRIGHTNESS_INACTIVE_BLUE_TINTED_WHITE);
                 } else {
                     setPixel(x, y, originalColor, 255);
                 }

@@ -38,12 +38,12 @@ void SecondaryLEDHandler::clearLEDs() {
 void SecondaryLEDHandler::loadFromArray() {
     for (uint16_t i = 0; i < numLeds; i++) {
         CRGB color = CRGB(SECONDARY_BITMAP[i]);
-        if (color == CRGB(COLOR_WHITE)) {
-            setPixel(i, color, BRIGHTNESS_INACTIVE_WHITE);
-        } else if (color == CRGB(COLOR_BLUE)) {
-            setPixel(i, color, BRIGHTNESS_INACTIVE_BLUE);
-        } else if (color == CRGB(COLOR_YELLOW)) {
-            setPixel(i, color, BRIGHTNESS_INACTIVE_YELLOW);
+        if (color == CRGB(MAP_WHITE)) {
+            setPixel(i, CRGB(DISPLAY_WHITE), BRIGHTNESS_INACTIVE_WHITE);
+        } else if (color == CRGB(MAP_BLUE)) {
+            setPixel(i, CRGB(DISPLAY_BLUE), BRIGHTNESS_INACTIVE_BLUE);
+        } else if (color == CRGB(MAP_YELLOW)) {
+            setPixel(i, CRGB(DISPLAY_DEEP_BLUE), BRIGHTNESS_INACTIVE_DEEP_BLUE);
         } else {
             setPixel(i, color, 255);
         }
@@ -52,17 +52,17 @@ void SecondaryLEDHandler::loadFromArray() {
 }
 
 bool SecondaryLEDHandler::isBluePixel(uint16_t index) {
-    return SECONDARY_BITMAP[index] == COLOR_BLUE;
+    return SECONDARY_BITMAP[index] == MAP_BLUE;
 }
 
 bool SecondaryLEDHandler::isYellowPixel(uint16_t index) {
-    return SECONDARY_BITMAP[index] == COLOR_YELLOW;
+    return SECONDARY_BITMAP[index] == MAP_YELLOW;
 }
 
 void SecondaryLEDHandler::activateBluePixels() {
     for (uint16_t i = 0; i < numLeds; i++) {
         if (isBluePixel(i)) {
-            setPixel(i, CRGB(COLOR_BLUE), 60);
+            setPixel(i, CRGB(DISPLAY_BLUE), BRIGHTNESS_ACTIVE_BLUE);
             isActivePixel[i] = true;
         }
     }
@@ -71,7 +71,7 @@ void SecondaryLEDHandler::activateBluePixels() {
 void SecondaryLEDHandler::activateYellowPixels() {
     for (uint16_t i = 0; i < numLeds; i++) {
         if (isYellowPixel(i)) {
-            setPixel(i, CRGB(COLOR_YELLOW), 60);
+            setPixel(i, CRGB(DISPLAY_DEEP_BLUE), BRIGHTNESS_ACTIVE_DEEP_BLUE);
             isActivePixel[i] = true;
         }
     }
@@ -81,12 +81,12 @@ void SecondaryLEDHandler::deactivateAllPixels() {
     for (uint16_t i = 0; i < numLeds; i++) {
         if (isActivePixel[i]) {
             CRGB color = CRGB(SECONDARY_BITMAP[i]);
-            if (color == CRGB(COLOR_BLUE)) {
-                setPixel(i, color, BRIGHTNESS_INACTIVE_BLUE);
-            } else if (color == CRGB(COLOR_YELLOW)) {
-                setPixel(i, color, BRIGHTNESS_INACTIVE_YELLOW);
-            } else if (color == CRGB(COLOR_WHITE)) {
-                setPixel(i, color, BRIGHTNESS_INACTIVE_WHITE);
+            if (color == CRGB(MAP_BLUE)) {
+                setPixel(i, CRGB(DISPLAY_BLUE), BRIGHTNESS_INACTIVE_BLUE);
+            } else if (color == CRGB(MAP_YELLOW)) {
+                setPixel(i, CRGB(DISPLAY_DEEP_BLUE), BRIGHTNESS_INACTIVE_DEEP_BLUE);
+            } else if (color == CRGB(MAP_WHITE)) {
+                setPixel(i, CRGB(DISPLAY_WHITE), BRIGHTNESS_INACTIVE_WHITE);
             }
             isActivePixel[i] = false;
         }
